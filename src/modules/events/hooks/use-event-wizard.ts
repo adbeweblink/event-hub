@@ -39,6 +39,11 @@ export interface EventDraft {
   name: string;
   type: EventType;
   format: EventFormat;
+  eventUrl: string;
+  // Step 4 (受眾 + 文案)
+  subtitle: string;
+  description: string;
+  highlights: string;
   // Step 2
   expectedAttendees: number;
   venueIds: string[];       // 選的場地 ID（可多個候選）
@@ -85,6 +90,10 @@ export const EMPTY_DRAFT: EventDraft = {
   name: "",
   type: "seminar",
   format: "onsite",
+  eventUrl: "",
+  subtitle: "",
+  description: "",
+  highlights: "",
   expectedAttendees: 0,
   venueIds: [],
   month: null,

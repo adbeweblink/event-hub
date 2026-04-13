@@ -61,6 +61,17 @@ export function Step1Basic({ draft, update }: Props) {
         />
       </div>
 
+      {/* Event URL */}
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium">活動網址</label>
+        <Input
+          type="url"
+          value={draft.eventUrl}
+          onChange={(e) => update("eventUrl", e.target.value)}
+          placeholder="https://...（選填，之後可補）"
+        />
+      </div>
+
       {/* Type + Format */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">

@@ -11,10 +11,12 @@ interface Props {
   update: <K extends keyof EventDraft>(key: K, value: EventDraft[K]) => void;
 }
 
-const WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
+const WEEKDAYS = ["一", "二", "三", "四", "五", "六", "日"];
+
+const WEEKDAYS_LABEL = ["日", "一", "二", "三", "四", "五", "六"];
 
 function getWeekday(dateStr: string) {
-  return WEEKDAYS[new Date(dateStr).getDay()];
+  return WEEKDAYS_LABEL[new Date(dateStr).getDay()];
 }
 
 function isWeekend(dateStr: string) {
@@ -98,7 +100,7 @@ export function Step3Date({ draft, update }: Props) {
             ))}
             {/* Empty cells for first day offset */}
             {calendarDays.length > 0 &&
-              Array.from({ length: new Date(calendarDays[0].date).getDay() }).map((_, i) => (
+              Array.from({ length: (new Date(calendarDays[0].date).getDay() + 6) % 7 }).map((_, i) => (
                 <div key={`empty-${i}`} />
               ))}
             {/* Day cells */}

@@ -38,16 +38,25 @@ export function Step2Venue({ draft, update }: Props) {
         <p className="text-sm text-muted-foreground">填人數後選場地，或加待場勘的候選場地</p>
       </div>
 
-      {/* Attendees */}
-      <div className="space-y-1.5 max-w-xs">
+      {/* Attendees — block selector */}
+      <div className="space-y-1.5">
         <label className="text-sm font-medium">預計人數</label>
-        <Input
-          type="number"
-          min={0}
-          value={draft.expectedAttendees || ""}
-          onChange={(e) => update("expectedAttendees", parseInt(e.target.value) || 0)}
-          placeholder="大概就好"
-        />
+        <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
+          {[50, 100, 150, 200, 250, 300, 350].map((n) => (
+            <button
+              key={n}
+              type="button"
+              onClick={() => update("expectedAttendees", n)}
+              className={`rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors ${
+                draft.expectedAttendees === n
+                  ? "border-primary bg-primary/5"
+                  : "border-border hover:bg-muted/50"
+              }`}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Venue selection */}

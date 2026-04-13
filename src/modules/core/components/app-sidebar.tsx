@@ -52,8 +52,8 @@ export function AppSidebar() {
                       isActive={isActive}
                       render={<Link href={item.href} />}
                     >
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                      <item.icon className="h-5 w-5" />
+                      <span className="text-base">{item.title}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );

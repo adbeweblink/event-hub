@@ -50,21 +50,45 @@ export function Step5Rundown({
         <p className="text-sm text-muted-foreground">設定三個時間點，逐條加議程，系統自動算時間</p>
       </div>
 
-      {/* Three key times */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium">進場施工</label>
-          <Input type="time" value={draft.setupTime} onChange={(e) => update("setupTime", e.target.value)} />
+      {/* Time inputs — morning first */}
+      <div className="space-y-3">
+        <div className="grid grid-cols-3 gap-4">
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">進場施工</label>
+            <select className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" value={draft.setupTime} onChange={(e) => update("setupTime", e.target.value)}>
+              {Array.from({ length: 13 }, (_, i) => i + 7).map((h) =>
+                [0, 30].map((m) => {
+                  const t = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+                  return <option key={t} value={t}>{t}</option>;
+                })
+              )}
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">開始入場</label>
+            <select className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" value={draft.startTime} onChange={(e) => update("startTime", e.target.value)}>
+              {Array.from({ length: 13 }, (_, i) => i + 7).map((h) =>
+                [0, 30].map((m) => {
+                  const t = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+                  return <option key={t} value={t}>{t}</option>;
+                })
+              )}
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">預計結束</label>
+            <select className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" value={draft.endTime} onChange={(e) => update("endTime", e.target.value)}>
+              {Array.from({ length: 13 }, (_, i) => i + 7).map((h) =>
+                [0, 30].map((m) => {
+                  const t = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+                  return <option key={t} value={t}>{t}</option>;
+                })
+              )}
+            </select>
+            {overTime && <p className="text-xs text-destructive">議程超時！</p>}
+          </div>
         </div>
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium">開始入場</label>
-          <Input type="time" value={draft.startTime} onChange={(e) => update("startTime", e.target.value)} />
-        </div>
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium">預計結束</label>
-          <Input type="time" value={draft.endTime} onChange={(e) => update("endTime", e.target.value)} />
-          {overTime && <p className="text-xs text-destructive">議程超時！</p>}
-        </div>
+        <p className="text-xs text-muted-foreground">時間選單從上午 07:00 排到下午 19:30</p>
       </div>
 
       {/* Rundown items */}
