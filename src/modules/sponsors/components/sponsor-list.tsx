@@ -52,8 +52,16 @@ function SponsorCard({
   return (
     <Card className="ring-1 ring-foreground/10 hover:shadow-md transition-all flex flex-col">
       <CardContent className="p-5 flex flex-col gap-3 cursor-pointer flex-1" onClick={onEdit}>
-        {/* Row 1: Name + Tier + Status + Menu */}
+        {/* Row 1: Logo + Name + Tier + Status + Menu */}
         <div className="flex items-start gap-3">
+          {sponsor.logo && (
+            <img
+              src={sponsor.logo}
+              alt={sponsor.name}
+              className="h-10 w-10 shrink-0 rounded-lg object-contain bg-white p-1 ring-1 ring-foreground/10"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+            />
+          )}
           <div className="min-w-0 flex-1">
             <h3 className="font-semibold text-base truncate">{sponsor.name}</h3>
             <p className="text-sm text-muted-foreground truncate">
