@@ -7,7 +7,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-geist-sans), var(--font-noto-sans-tc), sans-serif;
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -126,5 +126,7 @@
   }
   html {
     @apply font-sans;
+    /* 基準字體自適應：小螢幕 15px ↔ 大螢幕 17px */
+    font-size: clamp(0.9375rem, 0.85rem + 0.25vw, 1.0625rem);
   }
 }
