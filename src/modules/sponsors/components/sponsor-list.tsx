@@ -58,7 +58,7 @@ function SponsorCard({
             <img
               src={sponsor.logo}
               alt={sponsor.name}
-              className="h-10 w-10 shrink-0 rounded-lg object-contain bg-white p-1 ring-1 ring-foreground/10"
+              className="h-12 w-12 shrink-0 rounded-lg object-contain bg-white p-1.5 ring-1 ring-foreground/10"
               onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
             />
           )}

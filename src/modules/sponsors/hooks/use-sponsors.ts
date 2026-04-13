@@ -26,9 +26,29 @@ export interface SponsorRecord {
   updatedAt: string;
 }
 
-// Clearbit logo helper: domain → logo URL
+// 品牌 logo：優先用 Wikipedia/官方高清圖，fallback 用 Google Favicon
+const BRAND_LOGOS: Record<string, string> = {
+  "adobe.com": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Adobe_Corporate_logo.svg/200px-Adobe_Corporate_logo.svg.png",
+  "microsoft.com": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Microsoft_logo.svg/200px-Microsoft_logo.svg.png",
+  "intel.com": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Intel_logo_%282006-2020%29.svg/200px-Intel_logo_%282006-2020%29.svg.png",
+  "amd.com": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/AMD_Logo.svg/200px-AMD_Logo.svg.png",
+  "nvidia.com": "https://upload.wikimedia.org/wikipedia/sco/thumb/2/21/Nvidia_logo.svg/200px-Nvidia_logo.svg.png",
+  "wacom.com": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Wacom_logo.svg/200px-Wacom_logo.svg.png",
+  "logitech.com": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Logitech_logo.svg/200px-Logitech_logo.svg.png",
+  "asus.com": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/ASUS_Logo.svg/200px-ASUS_Logo.svg.png",
+  "msi.com": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/MSI_Logo.svg/200px-MSI_Logo.svg.png",
+  "lenovo.com": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/Lenovo_logo_2015.svg/200px-Lenovo_logo_2015.svg.png",
+  "gigabyte.com": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/72/Gigabyte_Technology_logo_20080107.svg/200px-Gigabyte_Technology_logo_20080107.svg.png",
+  "apple.com": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Apple_logo_black.svg/100px-Apple_logo_black.svg.png",
+  "benq.com": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/BenQ_Logo.svg/200px-BenQ_Logo.svg.png",
+  "lg.com": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/20/LG_symbol.svg/200px-LG_symbol.svg.png",
+  "sony.com": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Sony_logo.svg/200px-Sony_logo.svg.png",
+  "pantone.com": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/Pantone_logo.svg/200px-Pantone_logo.svg.png",
+  "qnap.com": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/QNAP_Logo.svg/200px-QNAP_Logo.svg.png",
+};
+
 function logo(domain: string) {
-  return `https://logo.clearbit.com/${domain}`;
+  return BRAND_LOGOS[domain] || `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
 }
 
 function sp(id: string, name: string, tier: SponsorTier, status: SponsorStatus, domain: string, industry: string, benefits: string, notes: string = "", pastEvents: string[] = []): SponsorRecord {
