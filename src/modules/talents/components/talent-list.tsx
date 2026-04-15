@@ -18,16 +18,16 @@ import {
   MoreHorizontal,
   Pencil,
   Trash2,
-  Phone,
-  Mail,
   RotateCcw,
+  Download,
 } from "lucide-react";
 import { useTalents, type TalentRecord, type TalentFormData } from "../hooks/use-talents";
 import { TalentFormDialog } from "./talent-form-dialog";
-import { TALENT_TYPES, TALENT_TYPE_MAP, SPEAKER_SUB_TYPES, SPEAKER_SUB_TYPE_MAP, FEE_UNIT_OPTIONS } from "../constants";
+import { SPEAKER_SUB_TYPES, SPEAKER_SUB_TYPE_MAP, FEE_UNIT_OPTIONS } from "../constants";
 import { Stars } from "@/shared/components/stars";
 import { formatNTD } from "@/shared/lib/format";
 import { nativeSelectCn } from "@/shared/lib/styles";
+import { downloadCSV } from "@/shared/lib/csv";
 
 function getFeeLabel(unit: string) {
   return FEE_UNIT_OPTIONS.find((u) => u.value === unit)?.label ?? unit;
@@ -60,16 +60,11 @@ function TalentCard({
             <p className="text-sm text-muted-foreground truncate">
               {[talent.title, talent.company].filter(Boolean).join(" · ") || "—"}
             </p>
-            <div className="flex items-center gap-1.5 mt-1">
-              <Badge variant="secondary" className="text-xs">
-                {TALENT_TYPE_MAP[talent.type] ?? talent.type}
+            {talent.subType && (
+              <Badge variant="outline" className="text-xs mt-1">
+                {SPEAKER_SUB_TYPE_MAP[talent.subType] ?? talent.subType}
               </Badge>
-              {talent.subType && (
-                <Badge variant="outline" className="text-xs">
-                  {SPEAKER_SUB_TYPE_MAP[talent.subType] ?? talent.subType}
-                </Badge>
-              )}
-            </div>
+            )}
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger
@@ -124,16 +119,6 @@ function TalentCard({
           <Stars rating={talent.rating} />
         </div>
 
-        {/* Row 5: Past Events — if any */}
-        {talent.pastEvents.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {talent.pastEvents.map((name) => (
-              <Badge key={name} variant="outline" className="text-xs">
-                {name}
-              </Badge>
-            ))}
-          </div>
-        )}
       </CardContent>
     </Card>
   );
@@ -144,7 +129,6 @@ export function TalentList() {
     talents,
     totalCount,
     search, setSearch,
-    typeFilter, setTypeFilter,
     subTypeFilter, setSubTypeFilter,
     addTalent, updateTalent, deleteTalent,
   } = useTalents();
@@ -170,20 +154,32 @@ export function TalentList() {
     }
   }
 
+  const hasFilter = search || subTypeFilter !== "all";
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">講者資料庫</h1>
+          <h1 className="text-2xl font-bold tracking-tight">講者列表</h1>
           <p className="text-sm text-muted-foreground">
             共 {totalCount} 位講者 · 顯示 {talents.length} 位
           </p>
         </div>
-        <Button onClick={handleAdd}>
-          <Plus className="mr-1.5 h-4 w-4" />
-          新增講者
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => {
+            downloadCSV("talents.csv",
+              ["姓名", "類型", "職稱", "公司", "專長", "電話", "Email", "費用", "評分"],
+              talents.map((t) => [t.name, SPEAKER_SUB_TYPE_MAP[t.subType] ?? t.subType, t.title, t.company, t.specialties.join("/"), t.contactPhone, t.contactEmail, t.fee ? String(t.fee) : "", String(t.rating)])
+            );
+          }}>
+            <Download className="mr-1.5 h-4 w-4" />匯出
+          </Button>
+          <Button onClick={handleAdd}>
+            <Plus className="mr-1.5 h-4 w-4" />
+            新增講者
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -199,35 +195,20 @@ export function TalentList() {
         </div>
         <select
           className={nativeSelectCn}
-          value={typeFilter}
-          onChange={(e) => {
-            setTypeFilter(e.target.value as typeof typeFilter);
-            if (e.target.value !== "speaker") setSubTypeFilter("all");
-          }}
+          value={subTypeFilter}
+          onChange={(e) => setSubTypeFilter(e.target.value as typeof subTypeFilter)}
         >
-          <option value="all">全部類型</option>
-          {TALENT_TYPES.map((t) => (
-            <option key={t.value} value={t.value}>{t.label}</option>
+          <option value="all">全部講者</option>
+          {SPEAKER_SUB_TYPES.map((s) => (
+            <option key={s.value} value={s.value}>{s.label}</option>
           ))}
         </select>
-        {typeFilter === "speaker" && (
-          <select
-            className={nativeSelectCn}
-            value={subTypeFilter}
-            onChange={(e) => setSubTypeFilter(e.target.value as typeof subTypeFilter)}
-          >
-            <option value="all">全部講者</option>
-            {SPEAKER_SUB_TYPES.map((s) => (
-              <option key={s.value} value={s.value}>{s.label}</option>
-            ))}
-          </select>
-        )}
-        {(search || typeFilter !== "all" || subTypeFilter !== "all") && (
+        {hasFilter && (
           <Button
             variant="ghost"
             size="icon"
             className="shrink-0"
-            onClick={() => { setSearch(""); setTypeFilter("all"); setSubTypeFilter("all"); }}
+            onClick={() => { setSearch(""); setSubTypeFilter("all"); }}
           >
             <RotateCcw className="h-4 w-4" />
           </Button>
@@ -238,9 +219,7 @@ export function TalentList() {
       {talents.length === 0 ? (
         <Card className="ring-1 ring-foreground/10">
           <CardContent className="flex items-center justify-center py-16 text-muted-foreground">
-            {search || typeFilter !== "all"
-              ? "沒有符合條件的講者"
-              : "尚未建立任何講者"}
+            {hasFilter ? "沒有符合條件的講者" : "尚未建立任何講者"}
           </CardContent>
         </Card>
       ) : (

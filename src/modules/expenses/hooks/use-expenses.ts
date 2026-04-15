@@ -1,95 +1,139 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { toast } from "sonner";
+import { supabase } from "@/shared/lib/supabase";
 import type { ExpenseCategory } from "../constants";
 
-export interface ExpenseRecord {
+export interface ServiceRecord {
   id: string;
-  date: string;
   category: ExpenseCategory;
+  serviceName: string;
   description: string;
-  amount: number;
-  taxIncluded: boolean;
-  eventName: string;
-  vendor: string;
-  receiptNo: string;
-  paidBy: string;
+  contactName: string;
+  contactPhone: string;
+  contactEmail: string;
+  vendorId: string;
+  vendorName: string;
+  price: number;
+  priceNote: string;
   notes: string;
   createdAt: string;
   updatedAt: string;
 }
 
-const INITIAL: ExpenseRecord[] = [
-  {
-    id: "e1", date: "2026-04-10", category: "transport", description: "場勘計程車 — 三創 12F",
-    amount: 350, taxIncluded: true, eventName: "AI 快充學堂", vendor: "", receiptNo: "",
-    paidBy: "Mark", notes: "", createdAt: "2026-04-10", updatedAt: "2026-04-10",
-  },
-  {
-    id: "e2", date: "2026-04-08", category: "print", description: "活動海報 A1 × 3 張",
-    amount: 1800, taxIncluded: true, eventName: "AI 快充學堂", vendor: "創意印刷", receiptNo: "AB-20260408",
-    paidBy: "Mark", notes: "", createdAt: "2026-04-08", updatedAt: "2026-04-08",
-  },
-  {
-    id: "e3", date: "2026-04-05", category: "meal", description: "講者餐敘 × 4 人",
-    amount: 3200, taxIncluded: true, eventName: "AI 快充學堂", vendor: "", receiptNo: "",
-    paidBy: "Mark", notes: "含飲料", createdAt: "2026-04-05", updatedAt: "2026-04-05",
-  },
-  {
-    id: "e4", date: "2026-03-28", category: "gift", description: "講者禮品 — 客製馬克杯 × 5",
-    amount: 2500, taxIncluded: false, eventName: "AI 快充學堂", vendor: "全球禮品", receiptNo: "GG-0328",
-    paidBy: "Irene", notes: "未稅價，含稅 2625", createdAt: "2026-03-28", updatedAt: "2026-03-28",
-  },
-];
+function rowToRecord(r: Record<string, unknown>): ServiceRecord {
+  return {
+    id: r.id as string,
+    category: r.category as ExpenseCategory,
+    serviceName: (r.service_name as string) ?? "",
+    description: (r.description as string) ?? "",
+    contactName: (r.contact_name as string) ?? "",
+    contactPhone: (r.contact_phone as string) ?? "",
+    contactEmail: (r.contact_email as string) ?? "",
+    vendorId: (r.vendor_id as string) ?? "",
+    vendorName: (r.vendor_name as string) ?? "",
+    price: (r.price as number) ?? 0,
+    priceNote: (r.price_note as string) ?? "",
+    notes: (r.notes as string) ?? "",
+    createdAt: r.created_at as string,
+    updatedAt: r.updated_at as string,
+  };
+}
 
-export type ExpenseFormData = Omit<ExpenseRecord, "id" | "createdAt" | "updatedAt">;
+export type ServiceFormData = Omit<ServiceRecord, "id" | "createdAt" | "updatedAt">;
 
-export function useExpenses() {
-  const [expenses, setExpenses] = useState<ExpenseRecord[]>(INITIAL);
+export function useServices() {
+  const [services, setServices] = useState<ServiceRecord[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<ExpenseCategory | "all">("all");
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      const { data } = await supabase.from("services").select("*").order("service_name");
+      if (cancelled) return;
+      if (data) setServices(data.map(rowToRecord));
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  async function fetchServices() {
+    setLoading(true);
+    const { data } = await supabase.from("services").select("*").order("service_name");
+    if (data) setServices(data.map(rowToRecord));
+    setLoading(false);
+  }
+
   const filtered = useMemo(() => {
-    return expenses.filter((e) => {
+    return services.filter((s) => {
       const matchSearch =
         !search ||
-        e.description.toLowerCase().includes(search.toLowerCase()) ||
-        e.eventName.toLowerCase().includes(search.toLowerCase()) ||
-        e.vendor.toLowerCase().includes(search.toLowerCase()) ||
-        e.paidBy.toLowerCase().includes(search.toLowerCase());
-      const matchCategory = categoryFilter === "all" || e.category === categoryFilter;
+        s.serviceName.toLowerCase().includes(search.toLowerCase()) ||
+        s.description.toLowerCase().includes(search.toLowerCase()) ||
+        s.contactName.toLowerCase().includes(search.toLowerCase()) ||
+        s.vendorName.toLowerCase().includes(search.toLowerCase());
+      const matchCategory = categoryFilter === "all" || s.category === categoryFilter;
       return matchSearch && matchCategory;
     });
-  }, [expenses, search, categoryFilter]);
+  }, [services, search, categoryFilter]);
 
-  const totalAmount = useMemo(() => filtered.reduce((s, e) => s + e.amount, 0), [filtered]);
-
-  const addExpense = useCallback((data: ExpenseFormData) => {
-    const now = new Date().toISOString().slice(0, 10);
-    setExpenses((prev) => [
-      { ...data, id: `e${Date.now()}`, createdAt: now, updatedAt: now },
-      ...prev,
-    ]);
+  const addService = useCallback(async (data: ServiceFormData) => {
+    const { data: row, error } = await supabase.from("services").insert({
+      category: data.category, service_name: data.serviceName, description: data.description,
+      contact_name: data.contactName, contact_phone: data.contactPhone, contact_email: data.contactEmail,
+      vendor_id: data.vendorId || null, vendor_name: data.vendorName,
+      price: data.price ?? 0, price_note: data.priceNote ?? "", notes: data.notes,
+    }).select().single();
+    if (!error && row) {
+      setServices((prev) => [rowToRecord(row), ...prev]);
+      toast.success("服務已新增");
+    } else if (error) {
+      toast.error("新增失敗");
+    }
   }, []);
 
-  const updateExpense = useCallback((id: string, updates: Partial<ExpenseRecord>) => {
-    setExpenses((prev) =>
-      prev.map((e) =>
-        e.id === id ? { ...e, ...updates, updatedAt: new Date().toISOString().slice(0, 10) } : e
-      )
-    );
+  const updateService = useCallback(async (id: string, updates: Partial<ServiceFormData>) => {
+    const patch: Record<string, unknown> = {};
+    if (updates.category !== undefined) patch.category = updates.category;
+    if (updates.serviceName !== undefined) patch.service_name = updates.serviceName;
+    if (updates.description !== undefined) patch.description = updates.description;
+    if (updates.contactName !== undefined) patch.contact_name = updates.contactName;
+    if (updates.contactPhone !== undefined) patch.contact_phone = updates.contactPhone;
+    if (updates.contactEmail !== undefined) patch.contact_email = updates.contactEmail;
+    if (updates.vendorId !== undefined) patch.vendor_id = updates.vendorId || null;
+    if (updates.vendorName !== undefined) patch.vendor_name = updates.vendorName;
+    if (updates.price !== undefined) patch.price = updates.price;
+    if (updates.priceNote !== undefined) patch.price_note = updates.priceNote;
+    if (updates.notes !== undefined) patch.notes = updates.notes;
+    const { data: row, error } = await supabase.from("services").update(patch).eq("id", id).select().single();
+    if (!error && row) {
+      setServices((prev) => prev.map((s) => s.id === id ? rowToRecord(row) : s));
+      toast.success("服務已更新");
+    } else if (error) {
+      toast.error("更新失敗");
+    }
   }, []);
 
-  const deleteExpense = useCallback((id: string) => {
-    setExpenses((prev) => prev.filter((e) => e.id !== id));
+  const deleteService = useCallback(async (id: string) => {
+    const { error } = await supabase.from("services").delete().eq("id", id);
+    if (!error) {
+      setServices((prev) => prev.filter((s) => s.id !== id));
+      toast.success("服務已刪除");
+    } else {
+      toast.error("刪除失敗");
+    }
   }, []);
 
   return {
-    expenses: filtered,
-    totalCount: expenses.length,
-    totalAmount,
+    services: filtered,
+    totalCount: services.length,
+    loading,
     search, setSearch,
     categoryFilter, setCategoryFilter,
-    addExpense, updateExpense, deleteExpense,
+    addService, updateService, deleteService,
   };
 }

@@ -1,157 +1,159 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
-import type { Vendor, VendorCategory } from "@/shared/types";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { toast } from "sonner";
+import { supabase } from "@/shared/lib/supabase";
+import type { VendorCategory } from "@/shared/types";
 
-// ===== Mock Data（之後換成 Supabase）=====
+export interface VendorRow {
+  id: string;
+  name: string;
+  category: VendorCategory;
+  tax_id: string;
+  bank_code: string;
+  bank_name: string;
+  bank_account: string;
+  contact_name: string;
+  contact_phone: string;
+  contact_email: string;
+  created_at: string;
+  updated_at: string;
+}
 
-const INITIAL_VENDORS: Vendor[] = [
-  {
-    id: "v1",
-    name: "典華幸福機構",
-    category: "venue",
-    contactName: "陳小姐",
-    contactPhone: "02-8786-8168",
-    contactEmail: "events@denwell.com.tw",
-    notes: "大直旗艦館，300 人以上活動首選，音響設備完善",
-    rating: 4,
-    createdAt: "2025-03-10",
-    updatedAt: "2026-02-15",
-  },
-  {
-    id: "v2",
-    name: "老爺行旅",
-    category: "venue",
-    contactName: "林經理",
-    contactPhone: "02-7750-0588",
-    contactEmail: "mice@royal-group.com",
-    notes: "南港展覽館旁，適合中型研討會 80-150 人",
-    rating: 4,
-    createdAt: "2025-06-01",
-    updatedAt: "2026-01-20",
-  },
-  {
-    id: "v3",
-    name: "寬宏攝影",
-    category: "photography",
-    contactName: "張先生",
-    contactPhone: "0912-345-678",
-    contactEmail: "photo@kuanhong.com",
-    notes: "配合多次活動，出圖速度快，有空拍機",
-    rating: 5,
-    createdAt: "2025-01-15",
-    updatedAt: "2026-03-01",
-  },
-  {
-    id: "v4",
-    name: "樂饗餐飲",
-    category: "catering",
-    contactName: "王主廚",
-    contactPhone: "02-2712-3456",
-    contactEmail: "catering@lexiang.tw",
-    notes: "buffet 和餐盒都可做，素食選項多",
-    rating: 4,
-    createdAt: "2025-04-20",
-    updatedAt: "2026-02-28",
-  },
-  {
-    id: "v5",
-    name: "創意印刷",
-    category: "printing",
-    contactName: "李小姐",
-    contactPhone: "02-2567-8901",
-    contactEmail: "print@creative-print.tw",
-    notes: "大圖輸出、背板製作、DM 印刷，急件可處理",
-    rating: 3,
-    createdAt: "2025-08-10",
-    updatedAt: "2025-12-15",
-  },
-  {
-    id: "v6",
-    name: "串流科技",
-    category: "livestream",
-    contactName: "吳工程師",
-    contactPhone: "0935-678-901",
-    contactEmail: "live@streamtech.tw",
-    notes: "YouTube + Facebook 雙平台同步直播，備有導播機",
-    rating: 5,
-    createdAt: "2025-09-01",
-    updatedAt: "2026-03-10",
-  },
-  {
-    id: "v7",
-    name: "達美設計",
-    category: "design",
-    contactName: "許設計師",
-    contactPhone: "0922-111-222",
-    contactEmail: "design@dami.tw",
-    notes: "主視覺設計、EDM 排版、社群圖卡",
-    rating: 4,
-    createdAt: "2025-05-15",
-    updatedAt: "2026-01-05",
-  },
-  {
-    id: "v8",
-    name: "全球禮品",
-    category: "gift",
-    contactName: "黃業務",
-    contactPhone: "02-2345-6789",
-    contactEmail: "sales@globalgift.tw",
-    notes: "客製化禮品、環保袋、馬克杯，MOQ 100 起",
-    rating: 3,
-    createdAt: "2025-07-01",
-    updatedAt: "2025-11-20",
-  },
-];
+/** Frontend-friendly shape (camelCase) */
+export interface VendorRecord {
+  id: string;
+  name: string;
+  category: VendorCategory;
+  taxId: string;
+  bankCode: string;
+  bankName: string;
+  bankAccount: string;
+  contactName: string;
+  contactPhone: string;
+  contactEmail: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+function rowToRecord(r: VendorRow): VendorRecord {
+  return {
+    id: r.id,
+    name: r.name,
+    category: r.category as VendorCategory,
+    taxId: r.tax_id,
+    bankCode: r.bank_code,
+    bankName: r.bank_name,
+    bankAccount: r.bank_account,
+    contactName: r.contact_name,
+    contactPhone: r.contact_phone,
+    contactEmail: r.contact_email,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  };
+}
+
+export type VendorFormData = Omit<VendorRecord, "id" | "createdAt" | "updatedAt">;
 
 export function useVendors() {
-  const [vendors, setVendors] = useState<Vendor[]>(INITIAL_VENDORS);
+  const [vendors, setVendors] = useState<VendorRecord[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<VendorCategory | "all">("all");
+
+  // Fetch on mount
+  useEffect(() => {
+    fetchVendors();
+  }, []);
+
+  async function fetchVendors() {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("vendors")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (!error && data) {
+      setVendors(data.map(rowToRecord));
+    }
+    setLoading(false);
+  }
 
   const filtered = useMemo(() => {
     return vendors.filter((v) => {
       const matchSearch =
         !search ||
         v.name.toLowerCase().includes(search.toLowerCase()) ||
-        v.contactName.toLowerCase().includes(search.toLowerCase()) ||
-        v.notes.toLowerCase().includes(search.toLowerCase());
+        v.contactName.toLowerCase().includes(search.toLowerCase());
       const matchCategory =
         categoryFilter === "all" || v.category === categoryFilter;
       return matchSearch && matchCategory;
     });
   }, [vendors, search, categoryFilter]);
 
-  const addVendor = useCallback((vendor: Omit<Vendor, "id" | "createdAt" | "updatedAt">) => {
-    const now = new Date().toISOString().slice(0, 10);
-    setVendors((prev) => [
-      {
-        ...vendor,
-        id: `v${Date.now()}`,
-        createdAt: now,
-        updatedAt: now,
-      },
-      ...prev,
-    ]);
+  const addVendor = useCallback(async (data: VendorFormData) => {
+    const { data: row, error } = await supabase
+      .from("vendors")
+      .insert({
+        name: data.name,
+        category: data.category,
+        tax_id: data.taxId,
+        bank_code: data.bankCode,
+        bank_name: data.bankName,
+        bank_account: data.bankAccount,
+        contact_name: data.contactName,
+        contact_phone: data.contactPhone,
+        contact_email: data.contactEmail,
+      })
+      .select()
+      .single();
+    if (!error && row) {
+      setVendors((prev) => [rowToRecord(row), ...prev]);
+      toast.success("廠商已新增");
+    } else if (error) {
+      toast.error("新增失敗");
+    }
   }, []);
 
-  const updateVendor = useCallback((id: string, updates: Partial<Vendor>) => {
-    setVendors((prev) =>
-      prev.map((v) =>
-        v.id === id
-          ? { ...v, ...updates, updatedAt: new Date().toISOString().slice(0, 10) }
-          : v
-      )
-    );
+  const updateVendor = useCallback(async (id: string, updates: Partial<VendorFormData>) => {
+    const patch: Record<string, unknown> = {};
+    if (updates.name !== undefined) patch.name = updates.name;
+    if (updates.category !== undefined) patch.category = updates.category;
+    if (updates.taxId !== undefined) patch.tax_id = updates.taxId;
+    if (updates.bankCode !== undefined) patch.bank_code = updates.bankCode;
+    if (updates.bankName !== undefined) patch.bank_name = updates.bankName;
+    if (updates.bankAccount !== undefined) patch.bank_account = updates.bankAccount;
+    if (updates.contactName !== undefined) patch.contact_name = updates.contactName;
+    if (updates.contactPhone !== undefined) patch.contact_phone = updates.contactPhone;
+    if (updates.contactEmail !== undefined) patch.contact_email = updates.contactEmail;
+
+    const { data: row, error } = await supabase
+      .from("vendors")
+      .update(patch)
+      .eq("id", id)
+      .select()
+      .single();
+    if (!error && row) {
+      setVendors((prev) => prev.map((v) => (v.id === id ? rowToRecord(row) : v)));
+      toast.success("廠商已更新");
+    } else if (error) {
+      toast.error("更新失敗");
+    }
   }, []);
 
-  const deleteVendor = useCallback((id: string) => {
-    setVendors((prev) => prev.filter((v) => v.id !== id));
+  const deleteVendor = useCallback(async (id: string) => {
+    const { error } = await supabase.from("vendors").delete().eq("id", id);
+    if (!error) {
+      setVendors((prev) => prev.filter((v) => v.id !== id));
+      toast.success("廠商已刪除");
+    } else {
+      toast.error("刪除失敗");
+    }
   }, []);
 
   return {
     vendors: filtered,
     totalCount: vendors.length,
+    loading,
     search,
     setSearch,
     categoryFilter,

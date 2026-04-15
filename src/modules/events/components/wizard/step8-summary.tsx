@@ -1,22 +1,26 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { parseLocalDate, formatNTD, WEEKDAYS } from "@/shared/lib/format";
+import { useTalents } from "@/modules/talents/hooks/use-talents";
 import {
-  Calendar, MapPin, Users, Mic, Camera, DollarSign, Megaphone,
+  Calendar, MapPin, Users, Mic, DollarSign, Megaphone, Mail,
 } from "lucide-react";
 import {
-  EVENT_TYPE_MAP, EVENT_FORMATS, FISCAL_QUARTERS,
+  EVENT_TYPE_MAP, EVENT_FORMATS, getFYQuarters,
   RUNDOWN_ITEM_TYPES, PERSON_STATUS_MAP, MARKETING_CHANNELS, REGISTRATION_METHODS,
 } from "../../constants";
-import { formatNTD } from "@/shared/lib/format";
 import type { EventDraft, RundownItem } from "../../hooks/use-event-wizard";
 
 interface Props {
   draft: EventDraft;
+  update: <K extends keyof EventDraft>(key: K, value: EventDraft[K]) => void;
   rundownWithTimes: (RundownItem & { startTime: string; endTime: string })[];
 }
 
-const WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
+
 
 function Row({ icon: Icon, label, value, muted }: { icon: React.ElementType; label: string; value: string; muted?: boolean }) {
   return (
@@ -30,20 +34,26 @@ function Row({ icon: Icon, label, value, muted }: { icon: React.ElementType; lab
   );
 }
 
-export function Step7Summary({ draft, rundownWithTimes }: Props) {
-  const quarter = FISCAL_QUARTERS.find((q) => q.value === draft.quarter);
+export function Step8Summary({ draft, update, rundownWithTimes }: Props) {
+  const { talents: allSpeakers } = useTalents();
+  const quarter = getFYQuarters(draft.fySystem).find((q) => q.value === draft.quarter);
   const format = EVENT_FORMATS.find((f) => f.value === draft.format);
   const needsSpeaker = Object.fromEntries(RUNDOWN_ITEM_TYPES.map((t) => [t.value, t.needsSpeaker]));
 
   const speakerItems = rundownWithTimes.filter((r) => needsSpeaker[r.type] && r.speakerName);
-  const estimatedCost = speakerItems.reduce((s, r) => s + Math.ceil(r.durationMin / 60) * 5000, 0);
+  const estimatedCost = speakerItems.reduce((s, r) => {
+    const speaker = allSpeakers.find((sp) => sp.name === r.speakerName);
+    return s + Math.ceil(r.durationMin / 60) * (speaker?.fee ?? 5000);
+  }, 0);
 
   const channels = draft.marketingChannels
     .map((c) => MARKETING_CHANNELS.find((ch) => ch.value === c)?.label)
     .filter(Boolean)
     .join(" / ");
 
-  const regMethod = REGISTRATION_METHODS.find((r) => r.value === draft.registrationMethod)?.label;
+  const dateDisplay = draft.tentativeDates.length > 0
+    ? draft.tentativeDates[0]
+    : "日期待定";
 
   // Count unfilled items as todos
   const todos: string[] = [];
@@ -79,7 +89,7 @@ export function Step7Summary({ draft, rundownWithTimes }: Props) {
           label="暫押日期"
           value={
             draft.tentativeDates.length > 0
-              ? draft.tentativeDates.map((d) => `${d}（${WEEKDAYS[new Date(d).getDay()]}）`).join("、")
+              ? draft.tentativeDates.map((d) => `${d}（${WEEKDAYS[parseLocalDate(d).getDay()]}）`).join("、")
               : "尚未選擇"
           }
           muted={draft.tentativeDates.length === 0}
@@ -137,6 +147,51 @@ export function Step7Summary({ draft, rundownWithTimes }: Props) {
           })}
         </div>
       )}
+
+      {/* Calendar invite */}
+      <div className="rounded-lg border p-5 space-y-4">
+        <div className="flex items-center gap-2">
+          <Mail className="h-4 w-4 text-muted-foreground" />
+          <h4 className="text-sm font-medium">建立行事曆邀請</h4>
+        </div>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">與會者郵件（逗號分隔）</label>
+            <Input
+              value={draft.calendarEmails}
+              onChange={(e) => update("calendarEmails", e.target.value)}
+              placeholder="a@example.com, b@example.com"
+            />
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">主旨</label>
+              <Input
+                value={draft.calendarSubject}
+                onChange={(e) => update("calendarSubject", e.target.value)}
+                placeholder="活動邀請"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">日期時間</label>
+              <Input
+                value={`${dateDisplay} ${draft.startTime} ~ ${draft.endTime}`}
+                readOnly
+                className="text-muted-foreground"
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">內文</label>
+            <Textarea
+              value={draft.calendarBody}
+              onChange={(e) => update("calendarBody", e.target.value)}
+              rows={5}
+              placeholder="自動從前面步驟帶入..."
+            />
+          </div>
+        </div>
+      </div>
 
       {/* Auto-generated todos */}
       {todos.length > 0 && (

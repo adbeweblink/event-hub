@@ -3,10 +3,12 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, GripVertical } from "lucide-react";
+import { Plus, Trash2, ChevronUp, ChevronDown } from "lucide-react";
 import { RUNDOWN_ITEM_TYPES, PERSON_STATUSES } from "../../constants";
 import { nativeSelectCn } from "@/shared/lib/styles";
 import { formatNTD } from "@/shared/lib/format";
+import { useTalents } from "@/modules/talents/hooks/use-talents";
+import { useVenues } from "@/modules/venues/hooks/use-venues";
 import type { EventDraft, RundownItem } from "../../hooks/use-event-wizard";
 import type { RundownItemType, PersonStatus } from "../../constants";
 
@@ -16,15 +18,17 @@ interface Props {
   addRundownItem: (item: Omit<RundownItem, "id">) => void;
   removeRundownItem: (id: string) => void;
   updateRundownItem: (id: string, patch: Partial<RundownItem>) => void;
+  moveRundownItem: (from: number, to: number) => void;
   rundownWithTimes: (RundownItem & { startTime: string; endTime: string })[];
-  totalBudget: number;
 }
 
 export function Step5Rundown({
   draft, update,
-  addRundownItem, removeRundownItem, updateRundownItem,
-  rundownWithTimes, totalBudget,
+  addRundownItem, removeRundownItem, updateRundownItem, moveRundownItem,
+  rundownWithTimes,
 }: Props) {
+  const { talents: allSpeakers } = useTalents();
+  const { venues: allVenues } = useVenues();
   const needsSpeakerMap = Object.fromEntries(
     RUNDOWN_ITEM_TYPES.map((t) => [t.value, t.needsSpeaker])
   );
@@ -56,7 +60,7 @@ export function Step5Rundown({
           <div className="space-y-1.5">
             <label className="text-sm font-medium">進場施工</label>
             <select className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" value={draft.setupTime} onChange={(e) => update("setupTime", e.target.value)}>
-              {Array.from({ length: 13 }, (_, i) => i + 7).map((h) =>
+              {Array.from({ length: 16 }, (_, i) => i + 7).map((h) =>
                 [0, 30].map((m) => {
                   const t = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
                   return <option key={t} value={t}>{t}</option>;
@@ -67,7 +71,7 @@ export function Step5Rundown({
           <div className="space-y-1.5">
             <label className="text-sm font-medium">開始入場</label>
             <select className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" value={draft.startTime} onChange={(e) => update("startTime", e.target.value)}>
-              {Array.from({ length: 13 }, (_, i) => i + 7).map((h) =>
+              {Array.from({ length: 16 }, (_, i) => i + 7).map((h) =>
                 [0, 30].map((m) => {
                   const t = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
                   return <option key={t} value={t}>{t}</option>;
@@ -78,7 +82,7 @@ export function Step5Rundown({
           <div className="space-y-1.5">
             <label className="text-sm font-medium">預計結束</label>
             <select className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" value={draft.endTime} onChange={(e) => update("endTime", e.target.value)}>
-              {Array.from({ length: 13 }, (_, i) => i + 7).map((h) =>
+              {Array.from({ length: 16 }, (_, i) => i + 7).map((h) =>
                 [0, 30].map((m) => {
                   const t = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
                   return <option key={t} value={t}>{t}</option>;
@@ -143,12 +147,18 @@ export function Step5Rundown({
                 {/* Speaker (conditional) */}
                 {needsSpeakerMap[item.type] ? (
                   <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                    <Input
+                    <select
+                      className="h-8 rounded-md border border-input bg-background px-2 text-sm flex-1 min-w-0"
                       value={item.speakerName}
                       onChange={(e) => updateRundownItem(item.id, { speakerName: e.target.value })}
-                      placeholder="講者"
-                      className="flex-1 min-w-0"
-                    />
+                    >
+                      <option value="">選擇講者</option>
+                      {allSpeakers.map((s) => (
+                        <option key={s.id} value={s.name}>
+                          {s.name}{s.title ? ` — ${s.title}` : ""}
+                        </option>
+                      ))}
+                    </select>
                     <select
                       className="h-8 rounded-md border border-input bg-background px-1.5 text-xs w-[72px] shrink-0"
                       value={item.speakerStatus}
@@ -163,7 +173,15 @@ export function Step5Rundown({
                   <div className="flex-1" />
                 )}
 
-                {/* Delete */}
+                {/* Reorder + Delete */}
+                <div className="flex flex-col shrink-0">
+                  <button type="button" className="h-4 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-20" disabled={idx === 0} onClick={() => moveRundownItem(idx, idx - 1)}>
+                    <ChevronUp className="h-3.5 w-3.5" />
+                  </button>
+                  <button type="button" className="h-4 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-20" disabled={idx === rundownWithTimes.length - 1} onClick={() => moveRundownItem(idx, idx + 1)}>
+                    <ChevronDown className="h-3.5 w-3.5" />
+                  </button>
+                </div>
                 <Button
                   type="button"
                   variant="ghost"
@@ -180,31 +198,37 @@ export function Step5Rundown({
       </div>
 
       {/* Budget summary */}
-      <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
-        <label className="text-sm font-medium">預算試算</label>
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          <span className="text-muted-foreground">場地費用</span>
-          <span className="text-right">待確認</span>
-          <span className="text-muted-foreground">
-            講者費用（{rundownWithTimes.filter((r) => needsSpeakerMap[r.type] && r.speakerName).length} 位）
-          </span>
-          <span className="text-right">
-            {formatNTD(
-              rundownWithTimes
-                .filter((r) => needsSpeakerMap[r.type] && r.speakerName)
-                .reduce((s, r) => s + Math.ceil(r.durationMin / 60) * 5000, 0)
-            )}
-          </span>
-          <span className="font-medium border-t pt-2">預估總成本</span>
-          <span className="font-medium text-right border-t pt-2">
-            {formatNTD(
-              rundownWithTimes
-                .filter((r) => needsSpeakerMap[r.type] && r.speakerName)
-                .reduce((s, r) => s + Math.ceil(r.durationMin / 60) * 5000, 0)
-            )}
-          </span>
-        </div>
-      </div>
+      {(() => {
+        const selectedVenues = allVenues.filter((v) => draft.venueIds.includes(v.id));
+        const venueCost = selectedVenues.reduce((s, v) => s + (v.priceFullDay ?? v.priceHalfDay ?? 0), 0);
+        const speakerCost = rundownWithTimes
+          .filter((r) => needsSpeakerMap[r.type] && r.speakerName)
+          .reduce((s, r) => {
+            const speaker = allSpeakers.find((sp) => sp.name === r.speakerName);
+            const hourlyRate = speaker?.fee ?? 5000;
+            return s + Math.ceil(r.durationMin / 60) * hourlyRate;
+          }, 0);
+        const total = venueCost + speakerCost;
+        return (
+          <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+            <label className="text-sm font-medium">預算試算</label>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <span className="text-muted-foreground">
+                場地費用（{selectedVenues.length} 場）
+              </span>
+              <span className="text-right">
+                {venueCost > 0 ? formatNTD(venueCost) : "待確認"}
+              </span>
+              <span className="text-muted-foreground">
+                講者費用（{rundownWithTimes.filter((r) => needsSpeakerMap[r.type] && r.speakerName).length} 位）
+              </span>
+              <span className="text-right">{formatNTD(speakerCost)}</span>
+              <span className="font-medium border-t pt-2">預估總成本</span>
+              <span className="font-medium text-right border-t pt-2">{formatNTD(total)}</span>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

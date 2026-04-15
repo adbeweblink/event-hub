@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,10 @@ export function Step4Audience({ draft, update }: Props) {
   const { settings } = useSettings();
 
   async function handleAiFill() {
-    if (!settings.geminiApiKey) return;
+    if (!settings.geminiApiKey) {
+      toast.error("請先到「設定」頁面填入 Gemini API Key");
+      return;
+    }
     setAiLoading(true);
     try {
       const context = [
@@ -51,14 +55,19 @@ ${context}
         }
       );
       const data = await res.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}";
+      if (data.error || !data.candidates?.length) {
+        throw new Error(data.error?.message || "AI 未回傳有效結果");
+      }
+      const text = data.candidates[0]?.content?.parts?.[0]?.text ?? "{}";
       const result = JSON.parse(text);
       if (result.name && !draft.name) update("name", result.name);
       if (result.subtitle) update("subtitle", result.subtitle);
       if (result.description) update("description", result.description);
       if (result.highlights) update("highlights", result.highlights);
       if (result.audienceDescription) update("audienceDescription", result.audienceDescription);
-    } catch {}
+    } catch (err) {
+      toast.error("AI 產生失敗：" + (err instanceof Error ? err.message : "未知錯誤"));
+    }
     setAiLoading(false);
   }
 

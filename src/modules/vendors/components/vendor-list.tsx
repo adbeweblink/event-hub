@@ -28,17 +28,15 @@ import {
   Plus,
   Search,
   MoreHorizontal,
+  Download,
   Pencil,
   Trash2,
-  Phone,
-  Mail,
 } from "lucide-react";
-import { useVendors } from "../hooks/use-vendors";
+import { useVendors, type VendorRecord, type VendorFormData } from "../hooks/use-vendors";
 import { VendorFormDialog } from "./vendor-form-dialog";
 import { VENDOR_CATEGORIES, VENDOR_CATEGORY_MAP } from "../constants";
-import { Stars } from "@/shared/components/stars";
 import { nativeSelectCn } from "@/shared/lib/styles";
-import type { Vendor } from "@/shared/types";
+import { downloadCSV } from "@/shared/lib/csv";
 
 export function VendorList() {
   const {
@@ -54,9 +52,9 @@ export function VendorList() {
   } = useVendors();
 
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<Vendor | null>(null);
+  const [editing, setEditing] = useState<VendorRecord | null>(null);
 
-  function handleEdit(vendor: Vendor) {
+  function handleEdit(vendor: VendorRecord) {
     setEditing(vendor);
     setDialogOpen(true);
   }
@@ -66,7 +64,7 @@ export function VendorList() {
     setDialogOpen(true);
   }
 
-  function handleSubmit(data: Omit<Vendor, "id" | "createdAt" | "updatedAt">) {
+  function handleSubmit(data: VendorFormData) {
     if (editing) {
       updateVendor(editing.id, data);
     } else {
@@ -79,15 +77,25 @@ export function VendorList() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">廠商資料庫</h1>
+          <h1 className="text-2xl font-bold tracking-tight">廠商建檔</h1>
           <p className="text-sm text-muted-foreground">
             共 {totalCount} 家廠商 · 顯示 {vendors.length} 筆
           </p>
         </div>
-        <Button onClick={handleAdd}>
-          <Plus className="mr-1.5 h-4 w-4" />
-          新增廠商
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => {
+            downloadCSV("vendors.csv",
+              ["名稱", "類別", "統編", "銀行", "帳號", "聯絡人", "電話", "Email"],
+              vendors.map((v) => [v.name, VENDOR_CATEGORY_MAP[v.category] ?? v.category, v.taxId, v.bankName, v.bankAccount, v.contactName, v.contactPhone, v.contactEmail])
+            );
+          }}>
+            <Download className="mr-1.5 h-4 w-4" />匯出
+          </Button>
+          <Button onClick={handleAdd}>
+            <Plus className="mr-1.5 h-4 w-4" />
+            新增廠商
+          </Button>
+        </div>
       </div>
 
       {/* Search + Filter */}
@@ -123,10 +131,12 @@ export function VendorList() {
               <TableRow>
                 <TableHead className="w-[200px]">廠商名稱</TableHead>
                 <TableHead>分類</TableHead>
+                <TableHead>統一編號</TableHead>
+                <TableHead className="hidden md:table-cell">銀行代碼</TableHead>
+                <TableHead className="hidden md:table-cell">銀行帳號</TableHead>
                 <TableHead>聯絡人</TableHead>
-                <TableHead className="hidden md:table-cell">聯絡方式</TableHead>
-                <TableHead>評分</TableHead>
-                <TableHead className="hidden lg:table-cell">備註</TableHead>
+                <TableHead className="hidden lg:table-cell">電話</TableHead>
+                <TableHead className="hidden lg:table-cell">Email</TableHead>
                 <TableHead className="w-[60px]" />
               </TableRow>
             </TableHeader>
@@ -134,7 +144,7 @@ export function VendorList() {
               {vendors.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={7}
+                    colSpan={9}
                     className="text-center text-muted-foreground py-12"
                   >
                     {search || categoryFilter !== "all"
@@ -155,27 +165,14 @@ export function VendorList() {
                         {VENDOR_CATEGORY_MAP[vendor.category] ?? vendor.category}
                       </Badge>
                     </TableCell>
-                    <TableCell>{vendor.contactName}</TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      <div className="flex flex-col gap-0.5 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Phone className="h-3 w-3" />
-                          {vendor.contactPhone}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Mail className="h-3 w-3" />
-                          {vendor.contactEmail}
-                        </span>
-                      </div>
+                    <TableCell className="text-muted-foreground">{vendor.taxId || "—"}</TableCell>
+                    <TableCell className="hidden md:table-cell text-muted-foreground">
+                      {vendor.bankCode ? `${vendor.bankCode} ${vendor.bankName}` : vendor.bankName || "—"}
                     </TableCell>
-                    <TableCell>
-                      <Stars rating={vendor.rating} />
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      <p className="text-sm text-muted-foreground truncate max-w-[200px]">
-                        {vendor.notes}
-                      </p>
-                    </TableCell>
+                    <TableCell className="hidden md:table-cell text-muted-foreground">{vendor.bankAccount || "—"}</TableCell>
+                    <TableCell>{vendor.contactName || "—"}</TableCell>
+                    <TableCell className="hidden lg:table-cell text-muted-foreground">{vendor.contactPhone || "—"}</TableCell>
+                    <TableCell className="hidden lg:table-cell text-muted-foreground">{vendor.contactEmail || "—"}</TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger

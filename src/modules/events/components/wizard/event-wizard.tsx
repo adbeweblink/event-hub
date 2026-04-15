@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -13,8 +14,9 @@ import { Step2Venue } from "./step2-venue";
 import { Step3Date } from "./step3-date";
 import { Step4Audience } from "./step4-audience";
 import { Step5Rundown } from "./step5-rundown";
-import { Step6Marketing } from "./step6-marketing";
-import { Step7Summary } from "./step7-summary";
+import { Step6Sponsors } from "./step6-sponsors";
+import { Step7Marketing } from "./step7-marketing";
+import { Step8Summary } from "./step8-summary";
 
 // Completion tracking
 interface FieldCheck {
@@ -39,8 +41,9 @@ function useCompletion(draft: ReturnType<typeof useEventWizard>["draft"], rundow
       { label: "受眾描述", done: !!draft.audienceDescription, step: 4 },
       { label: "活動描述", done: !!draft.description, step: 4 },
       { label: "議程 Rundown", done: rundownLen > 0, step: 5 },
-      { label: "行銷管道", done: draft.marketingChannels.length > 0, step: 6 },
-      { label: "報名方式", done: !!draft.registrationMethod, step: 6 },
+      { label: "贊助商", done: draft.sponsorIds.length > 0, step: 6 },
+      { label: "行銷管道", done: draft.marketingChannels.length > 0, step: 7 },
+      { label: "報名方式", done: !!draft.registrationMethod, step: 7 },
     ];
     const doneCount = fields.filter((f) => f.done).length;
     const percent = Math.round((doneCount / fields.length) * 100);
@@ -54,15 +57,28 @@ export function EventWizard() {
     step, totalSteps,
     draft, update, updateMany,
     next, prev, goTo,
-    addRundownItem, removeRundownItem, updateRundownItem,
+    addRundownItem, removeRundownItem, updateRundownItem, moveRundownItem,
     rundownWithTimes,
-    totalBudget,
+    createEvent,
   } = useEventWizard();
+  const router = useRouter();
 
   const { percent, missing } = useCompletion(draft, rundownWithTimes.length);
+  const [isCreating, setIsCreating] = useState(false);
 
-  function handleCreate() {
-    alert(`活動「${draft.name || `${draft.year} ${draft.quarter} 活動`}」已建立！`);
+  async function handleCreate() {
+    if (isCreating) return;
+    setIsCreating(true);
+    try {
+      const eventId = await createEvent();
+      if (eventId) {
+        router.push(`/events/${eventId}`);
+      } else {
+        setIsCreating(false);
+      }
+    } catch {
+      setIsCreating(false);
+    }
   }
 
   return (
@@ -100,12 +116,13 @@ export function EventWizard() {
               addRundownItem={addRundownItem}
               removeRundownItem={removeRundownItem}
               updateRundownItem={updateRundownItem}
+              moveRundownItem={moveRundownItem}
               rundownWithTimes={rundownWithTimes}
-              totalBudget={totalBudget}
             />
           )}
-          {step === 6 && <Step6Marketing draft={draft} update={update} />}
-          {step === 7 && <Step7Summary draft={draft} rundownWithTimes={rundownWithTimes} />}
+          {step === 6 && <Step6Sponsors draft={draft} update={update} />}
+          {step === 7 && <Step7Marketing draft={draft} update={update} />}
+          {step === 8 && <Step8Summary draft={draft} update={update} rundownWithTimes={rundownWithTimes} />}
         </CardContent>
       </Card>
 
@@ -149,9 +166,9 @@ export function EventWizard() {
             <ChevronRight className="ml-1.5 h-4 w-4" />
           </Button>
         ) : (
-          <Button onClick={handleCreate}>
+          <Button onClick={handleCreate} disabled={isCreating}>
             <Check className="mr-1.5 h-4 w-4" />
-            建立活動
+            {isCreating ? "建立中..." : "建立活動"}
           </Button>
         )}
       </div>

@@ -6,6 +6,7 @@ export type EventStatus =
   | "draft"
   | "planning"
   | "preparing"
+  | "marketing"
   | "executing"
   | "closing"
   | "archived";
@@ -14,10 +15,7 @@ export type EventType =
   | "seminar"
   | "workshop"
   | "launch"
-  | "webinar"
-  | "exhibition"
   | "press"
-  | "co_branding"
   | "other";
 
 export type EventFormat = "onsite" | "online" | "hybrid";
@@ -73,11 +71,13 @@ export interface Vendor {
   id: string;
   name: string;
   category: VendorCategory;
+  taxId: string;            // 統一編號
+  bankCode: string;         // 銀行代碼（如 808）
+  bankName: string;         // 銀行名稱（如 玉山銀行）
+  bankAccount: string;      // 銀行帳號
   contactName: string;
   contactPhone: string;
   contactEmail: string;
-  notes: string;
-  rating: number; // 1-5
   createdAt: string;
   updatedAt: string;
 }
@@ -86,48 +86,5 @@ export interface Vendor {
 // 實際型別定義在 modules/venues/hooks/use-venues.ts (VenueRecord)
 // 待接 Supabase 後統一遷入此處
 
-// ===== Talent (Speaker / Host) =====
-
-export type TalentType = "speaker" | "host" | "staff" | "other";
-
-export interface Talent {
-  id: string;
-  name: string;
-  type: TalentType;
-  specialty: string;
-  feePerEvent?: number;
-  feePerHour?: number;
-  contactPhone: string;
-  contactEmail: string;
-  notes: string;
-  rating: number;
-}
-
-// ===== Sponsor =====
-
-export type SponsorTier = "platinum" | "gold" | "silver" | "reciprocal";
-
-export interface Sponsor {
-  id: string;
-  name: string;
-  tier: SponsorTier;
-  contactName: string;
-  contactPhone: string;
-  contactEmail: string;
-  totalSponsored: number;
-  notes: string;
-}
-
-// ===== Expense (雜支) =====
-
-export interface Expense {
-  id: string;
-  eventId?: string;
-  eventName?: string;
-  category: string;
-  description: string;
-  amount: number;
-  date: string;
-  receipt?: string;
-  vendor?: string;
-}
+// Talent/Sponsor/Expense 的實際型別定義在各自模組的 hooks 中
+// 待接 Supabase 後統一遷入此處

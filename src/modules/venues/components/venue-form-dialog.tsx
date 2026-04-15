@@ -17,6 +17,7 @@ import { ImageUpload, type ImageItem } from "@/shared/components/image-upload";
 import { nativeSelectCn } from "@/shared/lib/styles";
 import { aiAutoFillVenue } from "@/shared/lib/gemini";
 import { useSettings } from "@/modules/core/hooks/use-settings";
+import { useVendors } from "@/modules/vendors/hooks/use-vendors";
 import { Sparkles, Loader2 } from "lucide-react";
 import type { VenueType, District } from "../constants";
 import type { VenueRecord, VenueFormData } from "../hooks/use-venues";
@@ -49,7 +50,7 @@ const EMPTY: VenueFormData = {
   images: [],
   notes: "",
   rating: 3,
-  pastEvents: [],
+  vendorId: null,
 };
 
 export function VenueFormDialog({ open, onClose, onSubmit, initial }: Props) {
@@ -57,6 +58,7 @@ export function VenueFormDialog({ open, onClose, onSubmit, initial }: Props) {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
   const { settings } = useSettings();
+  const { vendors } = useVendors();
   const isEdit = !!initial;
 
   useEffect(() => {
@@ -82,7 +84,7 @@ export function VenueFormDialog({ open, onClose, onSubmit, initial }: Props) {
         images: initial.images,
         notes: initial.notes,
         rating: initial.rating,
-        pastEvents: initial.pastEvents,
+        vendorId: initial.vendorId,
       });
     } else {
       setForm(EMPTY);
@@ -405,6 +407,21 @@ export function VenueFormDialog({ open, onClose, onSubmit, initial }: Props) {
               }
               maxImages={8}
             />
+          </div>
+
+          {/* Vendor Link */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">關聯廠商</label>
+            <select
+              className={nativeSelectCn}
+              value={form.vendorId ?? ""}
+              onChange={(e) => set("vendorId", e.target.value || null)}
+            >
+              <option value="">不關聯</option>
+              {vendors.map((v) => (
+                <option key={v.id} value={v.id}>{v.name}</option>
+              ))}
+            </select>
           </div>
 
           {/* Rating */}

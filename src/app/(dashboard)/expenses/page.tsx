@@ -1,5 +1,5 @@
-import { ExpenseList } from "@/modules/expenses/components/expense-list";
+import { ServiceList } from "@/modules/expenses/components/service-list";
 
-export default function ExpensesPage() {
-  return <ExpenseList />;
+export default function ServicesPage() {
+  return <ServiceList />;
 }

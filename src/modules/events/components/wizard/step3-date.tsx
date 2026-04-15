@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { nativeSelectCn } from "@/shared/lib/styles";
+import { nowDate, parseLocalDate } from "@/shared/lib/format";
 import { HOLIDAYS_2026 } from "../../constants";
 import type { EventDraft } from "../../hooks/use-event-wizard";
 
@@ -12,15 +13,14 @@ interface Props {
 }
 
 const WEEKDAYS = ["一", "二", "三", "四", "五", "六", "日"];
-
 const WEEKDAYS_LABEL = ["日", "一", "二", "三", "四", "五", "六"];
 
 function getWeekday(dateStr: string) {
-  return WEEKDAYS_LABEL[new Date(dateStr).getDay()];
+  return WEEKDAYS_LABEL[parseLocalDate(dateStr).getDay()];
 }
 
 function isWeekend(dateStr: string) {
-  const d = new Date(dateStr).getDay();
+  const d = parseLocalDate(dateStr).getDay();
   return d === 0 || d === 6;
 }
 
@@ -28,12 +28,24 @@ function isHoliday(dateStr: string) {
   return dateStr in HOLIDAYS_2026;
 }
 
+// Module-level constants — stable for entire session
+const TODAY = nowDate();
+const TODAY_DISPLAY = `${new Date().getMonth() + 1} 月 ${new Date().getDate()} 日（${getWeekday(TODAY)}）`;
+
+// Precompute holiday count per month
+const HOLIDAY_COUNTS: Record<number, number> = {};
+for (const key of Object.keys(HOLIDAYS_2026)) {
+  const m = parseInt(key.slice(5, 7));
+  HOLIDAY_COUNTS[m] = (HOLIDAY_COUNTS[m] ?? 0) + 1;
+}
+
 export function Step3Date({ draft, update }: Props) {
+
   // Generate calendar days for selected month
   const calendarDays = useMemo(() => {
     if (!draft.month || !draft.year) return [];
     const daysInMonth = new Date(draft.year, draft.month, 0).getDate();
-    const days: { date: string; day: number; weekday: string; holiday: string | null; isWeekend: boolean }[] = [];
+    const days: { date: string; day: number; weekday: string; holiday: string | null; isWeekend: boolean; isToday: boolean }[] = [];
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${draft.year}-${String(draft.month).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
       days.push({
@@ -42,6 +54,7 @@ export function Step3Date({ draft, update }: Props) {
         weekday: getWeekday(dateStr),
         holiday: HOLIDAYS_2026[dateStr] ?? null,
         isWeekend: isWeekend(dateStr),
+        isToday: dateStr === TODAY,
       });
     }
     return days;
@@ -56,31 +69,39 @@ export function Step3Date({ draft, update }: Props) {
     }
   }
 
-  // Month options
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-bold">活動時間</h2>
-        <p className="text-sm text-muted-foreground">先選月份，再暫押最多 3 個日期</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-bold">活動時間</h2>
+          <p className="text-sm text-muted-foreground">選月份看日曆，可跨月暫押最多 3 個日期</p>
+        </div>
+        <div className="text-sm text-muted-foreground text-right">
+          今天 <span className="font-medium text-foreground">{TODAY_DISPLAY}</span>
+        </div>
       </div>
 
       {/* Month */}
       <div className="space-y-1.5 max-w-xs">
-        <label className="text-sm font-medium">月份</label>
+        <label className="text-sm font-medium">瀏覽月份</label>
         <select
           className={nativeSelectCn}
           value={draft.month ?? ""}
           onChange={(e) => {
             update("month", e.target.value ? parseInt(e.target.value) : null);
-            update("tentativeDates", []);
           }}
         >
           <option value="">先選月份</option>
-          {months.map((m) => (
-            <option key={m} value={m}>{m} 月</option>
-          ))}
+          {months.map((m) => {
+            const hCount = HOLIDAY_COUNTS[m] ?? 0;
+            return (
+              <option key={m} value={m}>
+                {m} 月{hCount > 0 ? `（${hCount} 天假日）` : ""}
+              </option>
+            );
+          })}
         </select>
       </div>
 
@@ -91,7 +112,9 @@ export function Step3Date({ draft, update }: Props) {
             <span className="flex items-center gap-1"><span className="h-3 w-3 rounded bg-red-100 border border-red-200" /> 假日</span>
             <span className="flex items-center gap-1"><span className="h-3 w-3 rounded bg-gray-100 border border-gray-200" /> 週末</span>
             <span className="flex items-center gap-1"><span className="h-3 w-3 rounded bg-primary/20 border border-primary/40" /> 已選</span>
-            <span className="ml-auto">最多暫押 3 個日期</span>
+            <span className="ml-auto">
+              已選 {draft.tentativeDates.length} / 3
+            </span>
           </div>
           <div className="grid grid-cols-7 gap-1.5">
             {/* Weekday headers */}
@@ -107,7 +130,6 @@ export function Step3Date({ draft, update }: Props) {
             {calendarDays.map((d) => {
               const selected = draft.tentativeDates.includes(d.date);
               const holiday = d.holiday;
-              const disabled = false; // 不禁選，只提示
               return (
                 <button
                   key={d.date}
@@ -121,7 +143,7 @@ export function Step3Date({ draft, update }: Props) {
                         : d.isWeekend
                           ? "border-gray-200 bg-gray-50 text-muted-foreground"
                           : "border-border hover:bg-muted/50"
-                  }`}
+                  } ${d.isToday ? "ring-2 ring-primary/50" : ""}`}
                 >
                   <div>{d.day}</div>
                   <div className="text-[10px]">({d.weekday})</div>
@@ -135,12 +157,12 @@ export function Step3Date({ draft, update }: Props) {
         </div>
       )}
 
-      {/* Selected dates summary */}
+      {/* Selected dates summary — cross-month capable */}
       {draft.tentativeDates.length > 0 && (
         <div className="space-y-2">
           <label className="text-sm font-medium">暫押日期</label>
           <div className="flex flex-wrap gap-2">
-            {draft.tentativeDates.map((dateStr) => (
+            {[...draft.tentativeDates].sort().map((dateStr) => (
               <Badge
                 key={dateStr}
                 variant="secondary"

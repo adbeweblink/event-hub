@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { SPONSOR_TIERS, SPONSOR_STATUSES } from "../constants";
 import { nativeSelectCn } from "@/shared/lib/styles";
 import { Lock } from "lucide-react";
+import { useVendors } from "@/modules/vendors/hooks/use-vendors";
 import type { SponsorTier, SponsorStatus } from "../constants";
 import type { SponsorRecord, SponsorFormData } from "../hooks/use-sponsors";
 
@@ -40,11 +41,13 @@ const EMPTY: SponsorFormData = {
   sponsorBenefits: "",
   contractNote: "",
   notes: "",
+  vendorId: null,
   pastEvents: [],
 };
 
 export function SponsorFormDialog({ open, onClose, onSubmit, initial, isSuperAdmin }: Props) {
   const [form, setForm] = useState<SponsorFormData>(EMPTY);
+  const { vendors } = useVendors();
   const isEdit = !!initial;
 
   useEffect(() => {
@@ -64,6 +67,7 @@ export function SponsorFormDialog({ open, onClose, onSubmit, initial, isSuperAdm
         sponsorBenefits: initial.sponsorBenefits,
         contractNote: initial.contractNote,
         notes: initial.notes,
+        vendorId: initial.vendorId,
         pastEvents: initial.pastEvents,
       });
     } else {
@@ -144,6 +148,21 @@ export function SponsorFormDialog({ open, onClose, onSubmit, initial, isSuperAdm
                 placeholder="https://..."
               />
             </div>
+          </div>
+
+          {/* Vendor Link */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">關聯廠商</label>
+            <select
+              className={nativeSelectCn}
+              value={form.vendorId ?? ""}
+              onChange={(e) => set("vendorId", e.target.value || null)}
+            >
+              <option value="">不關聯</option>
+              {vendors.map((v) => (
+                <option key={v.id} value={v.id}>{v.name}</option>
+              ))}
+            </select>
           </div>
 
           {/* Contact */}

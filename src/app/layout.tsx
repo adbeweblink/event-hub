@@ -32,9 +32,13 @@ export default function RootLayout({
   return (
     <html
       lang="zh-TW"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} ${notoSansTC.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <script dangerouslySetInnerHTML={{ __html: `try{const t=localStorage.getItem("event-hub:theme");if(t==="dark"||(t==null&&matchMedia("(prefers-color-scheme:dark)").matches))document.documentElement.classList.add("dark")}catch(e){}` }} />
+        {children}
+      </body>
     </html>
   );
 }

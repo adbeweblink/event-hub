@@ -1,10 +1,10 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
-import { FISCAL_QUARTERS, EVENT_TYPES, EVENT_FORMATS } from "../../constants";
+import { FY_SYSTEMS, getFYQuarters, EVENT_TYPES, EVENT_FORMATS } from "../../constants";
 import { nativeSelectCn } from "@/shared/lib/styles";
 import type { EventDraft } from "../../hooks/use-event-wizard";
-import type { FiscalQuarter, EventType, EventFormat } from "../../constants";
+import type { FYSystem, FiscalQuarter, EventType, EventFormat } from "../../constants";
 
 interface Props {
   draft: EventDraft;
@@ -12,6 +12,8 @@ interface Props {
 }
 
 export function Step1Basic({ draft, update }: Props) {
+  const quarters = getFYQuarters(draft.fySystem);
+
   return (
     <div className="space-y-6">
       <div>
@@ -19,8 +21,30 @@ export function Step1Basic({ draft, update }: Props) {
         <p className="text-sm text-muted-foreground">先定大方向，細節之後再補</p>
       </div>
 
-      {/* Year + Quarter */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {/* FY System + Year */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium">會計年度</label>
+          <div className="grid grid-cols-2 gap-2">
+            {FY_SYSTEMS.map((sys) => (
+              <button
+                key={sys.value}
+                type="button"
+                onClick={() => {
+                  update("fySystem", sys.value as FYSystem);
+                  update("quarter", "Q1");
+                }}
+                className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
+                  draft.fySystem === sys.value
+                    ? "border-primary bg-primary/5 font-medium"
+                    : "border-border hover:bg-muted/50"
+                }`}
+              >
+                {sys.label}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="space-y-1.5">
           <label className="text-sm font-medium">年度</label>
           <Input
@@ -30,14 +54,14 @@ export function Step1Basic({ draft, update }: Props) {
           />
         </div>
         <div className="space-y-1.5">
-          <label className="text-sm font-medium">季度（Adobe FY）</label>
+          <label className="text-sm font-medium">季度</label>
           <div className="grid grid-cols-4 gap-2">
-            {FISCAL_QUARTERS.map((q) => (
+            {quarters.map((q) => (
               <button
                 key={q.value}
                 type="button"
                 onClick={() => update("quarter", q.value as FiscalQuarter)}
-                className={`rounded-lg border px-3 py-2 text-center text-sm transition-colors ${
+                className={`rounded-lg border px-2 py-2 text-center text-sm transition-colors ${
                   draft.quarter === q.value
                     ? "border-primary bg-primary/5 font-medium"
                     : "border-border hover:bg-muted/50"

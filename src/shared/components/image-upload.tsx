@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, useCallback } from "react";
-import { ImagePlus, X } from "lucide-react";
+import { useRef, useCallback, useState } from "react";
+import { ImagePlus, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { uploadVenueImage } from "@/shared/lib/storage";
 
 export interface ImageItem {
   id: string;
@@ -27,20 +28,26 @@ export function ImageUpload({
   labels = DEFAULT_LABELS,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
 
   const handleFiles = useCallback(
-    (files: FileList | null) => {
+    async (files: FileList | null) => {
       if (!files) return;
+      const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
       const remaining = maxImages - images.length;
-      const newItems: ImageItem[] = Array.from(files)
-        .slice(0, remaining)
-        .map((file) => ({
-          id: `img_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-          url: URL.createObjectURL(file),
-          label: "現場照片",
-          file,
-        }));
-      onChange([...images, ...newItems]);
+      const selected = Array.from(files).slice(0, remaining).filter((f) => f.size <= MAX_FILE_SIZE);
+      if (selected.length === 0) return;
+      setUploading(true);
+      const results = await Promise.all(
+        selected.map(async (file) => {
+          const url = await uploadVenueImage(file);
+          if (!url) return null;
+          return { id: `img_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, url, label: "現場照片" } as ImageItem;
+        })
+      );
+      const newItems = results.filter((r): r is ImageItem => r !== null);
+      if (newItems.length > 0) onChange([...images, ...newItems]);
+      setUploading(false);
     },
     [images, maxImages, onChange]
   );
@@ -54,8 +61,6 @@ export function ImageUpload({
   );
 
   function removeImage(id: string) {
-    const img = images.find((i) => i.id === id);
-    if (img?.url.startsWith("blob:")) URL.revokeObjectURL(img.url);
     onChange(images.filter((i) => i.id !== id));
   }
 
@@ -112,9 +117,13 @@ export function ImageUpload({
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleDrop}
         >
-          <ImagePlus className="h-8 w-8 text-muted-foreground/50" />
+          {uploading ? (
+            <Loader2 className="h-8 w-8 text-muted-foreground/50 animate-spin" />
+          ) : (
+            <ImagePlus className="h-8 w-8 text-muted-foreground/50" />
+          )}
           <p className="text-sm text-muted-foreground">
-            拖放圖片或點擊上傳
+            {uploading ? "上傳中..." : "拖放圖片或點擊上傳"}
           </p>
           <p className="text-xs text-muted-foreground/60">
             支援 JPG、PNG（最多 {maxImages} 張）

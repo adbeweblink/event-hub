@@ -17,11 +17,10 @@ import {
   MoreHorizontal,
   Pencil,
   Trash2,
-  Phone,
-  Mail,
   ExternalLink,
   Lock,
   RotateCcw,
+  Download,
 } from "lucide-react";
 import { useSponsors, type SponsorRecord, type SponsorFormData } from "../hooks/use-sponsors";
 import { SponsorFormDialog } from "./sponsor-form-dialog";
@@ -35,139 +34,7 @@ import {
 import { useAuth } from "@/modules/core/hooks/use-auth";
 import { formatNTD } from "@/shared/lib/format";
 import { nativeSelectCn } from "@/shared/lib/styles";
-
-function SponsorCard({
-  sponsor,
-  onEdit,
-  onDelete,
-  isSuperAdmin,
-}: {
-  sponsor: SponsorRecord;
-  onEdit: () => void;
-  onDelete: () => void;
-  isSuperAdmin: boolean;
-}) {
-  const tierColor = SPONSOR_TIER_COLOR_MAP[sponsor.tier] ?? "";
-
-  return (
-    <Card className="ring-1 ring-foreground/10 hover:shadow-md transition-all flex flex-col">
-      <CardContent className="p-5 flex flex-col gap-3 cursor-pointer flex-1" onClick={onEdit}>
-        {/* Row 1: Logo + Name + Tier + Status + Menu */}
-        <div className="flex items-start gap-3">
-          {sponsor.logo && (
-            <img
-              src={sponsor.logo}
-              alt={sponsor.name}
-              className="h-12 w-12 shrink-0 rounded-lg object-contain bg-white p-1.5 ring-1 ring-foreground/10"
-              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-            />
-          )}
-          <div className="min-w-0 flex-1">
-            <h3 className="font-semibold text-base truncate">{sponsor.name}</h3>
-            <p className="text-sm text-muted-foreground truncate">
-              {sponsor.industry || "—"}
-            </p>
-            <div className="flex items-center gap-1.5 mt-1">
-              <Badge variant="secondary" className={`text-xs ${tierColor}`}>
-                {SPONSOR_TIER_MAP[sponsor.tier] ?? sponsor.tier}
-              </Badge>
-              <Badge variant="outline" className="text-xs">
-                {SPONSOR_STATUS_MAP[sponsor.status] ?? sponsor.status}
-              </Badge>
-            </div>
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 shrink-0"
-                  onClick={(e) => e.stopPropagation()}
-                />
-              }
-            >
-              <MoreHorizontal className="h-4 w-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(); }}>
-                <Pencil className="mr-2 h-4 w-4" />
-                編輯
-              </DropdownMenuItem>
-              <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
-                <Trash2 className="mr-2 h-4 w-4" />
-                刪除
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        {/* Row 2: Benefits */}
-        <p className="text-sm text-muted-foreground line-clamp-2 min-h-[40px]">
-          {sponsor.sponsorBenefits || sponsor.notes || "尚未填寫權益內容"}
-        </p>
-
-        {/* Row 3: Contact */}
-        {(sponsor.contactName || sponsor.contactPhone || sponsor.contactEmail) && (
-          <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
-            {sponsor.contactName && (
-              <span>{sponsor.contactName}{sponsor.contactTitle ? ` · ${sponsor.contactTitle}` : ""}</span>
-            )}
-            {sponsor.contactPhone && (
-              <span className="flex items-center gap-1">
-                <Phone className="h-3.5 w-3.5" />
-                {sponsor.contactPhone}
-              </span>
-            )}
-            {sponsor.contactEmail && (
-              <span className="flex items-center gap-1">
-                <Mail className="h-3.5 w-3.5" />
-                {sponsor.contactEmail}
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Row 4: Fee (super admin only) + Website — pushed to bottom */}
-        <div className="flex items-center justify-between text-sm mt-auto pt-2 border-t">
-          {isSuperAdmin && sponsor.sponsorFee != null ? (
-            <span className="flex items-center gap-1 text-destructive font-medium">
-              <Lock className="h-3 w-3" />
-              {formatNTD(sponsor.sponsorFee)}
-            </span>
-          ) : isSuperAdmin ? (
-            <span className="text-muted-foreground">金額未填</span>
-          ) : (
-            <span />
-          )}
-          {sponsor.website && (
-            <a
-              href={sponsor.website}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 text-xs text-primary hover:underline"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <ExternalLink className="h-3 w-3" />
-              官網
-            </a>
-          )}
-        </div>
-
-        {/* Row 5: Past Events */}
-        {sponsor.pastEvents.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {sponsor.pastEvents.map((name) => (
-              <Badge key={name} variant="outline" className="text-xs">
-                {name}
-              </Badge>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
+import { downloadCSV } from "@/shared/lib/csv";
 
 export function SponsorList() {
   const {
@@ -179,7 +46,7 @@ export function SponsorList() {
     addSponsor, updateSponsor, deleteSponsor,
   } = useSponsors();
 
-  const { isSuperAdmin } = useAuth();
+  const { isSuperAdmin, canViewFinancials } = useAuth();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<SponsorRecord | null>(null);
 
@@ -208,7 +75,7 @@ export function SponsorList() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">贊助商資料庫</h1>
+          <h1 className="text-2xl font-bold tracking-tight">贊助廠商</h1>
           <p className="text-sm text-muted-foreground">
             共 {totalCount} 家贊助商 · 顯示 {sponsors.length} 筆
             {isSuperAdmin && (
@@ -219,10 +86,20 @@ export function SponsorList() {
             )}
           </p>
         </div>
-        <Button onClick={handleAdd}>
-          <Plus className="mr-1.5 h-4 w-4" />
-          新增贊助商
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => {
+            downloadCSV("sponsors.csv",
+              ["名稱", "等級", "狀態", "產業", "聯絡人", "職稱", "電話", "Email", "贊助金額"],
+              sponsors.map((s) => [s.name, SPONSOR_TIER_MAP[s.tier] ?? s.tier, SPONSOR_STATUS_MAP[s.status] ?? s.status, s.industry, s.contactName, s.contactTitle, s.contactPhone, s.contactEmail, s.sponsorFee ? String(s.sponsorFee) : ""])
+            );
+          }}>
+            <Download className="mr-1.5 h-4 w-4" />匯出
+          </Button>
+          <Button onClick={handleAdd}>
+            <Plus className="mr-1.5 h-4 w-4" />
+            新增贊助商
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -268,7 +145,7 @@ export function SponsorList() {
         )}
       </div>
 
-      {/* Cards */}
+      {/* Table */}
       {sponsors.length === 0 ? (
         <Card className="ring-1 ring-foreground/10">
           <CardContent className="flex items-center justify-center py-16 text-muted-foreground">
@@ -276,16 +153,151 @@ export function SponsorList() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {sponsors.map((sponsor) => (
-            <SponsorCard
-              key={sponsor.id}
-              sponsor={sponsor}
-              onEdit={() => handleEdit(sponsor)}
-              onDelete={() => deleteSponsor(sponsor.id)}
-              isSuperAdmin={isSuperAdmin}
-            />
-          ))}
+        <div className="rounded-lg border overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b bg-muted/50">
+                <th className="text-left font-medium px-4 py-3 whitespace-nowrap">贊助商</th>
+                <th className="text-left font-medium px-4 py-3 whitespace-nowrap">等級</th>
+                <th className="text-left font-medium px-4 py-3 whitespace-nowrap">狀態</th>
+                <th className="text-left font-medium px-4 py-3 whitespace-nowrap">產業</th>
+                <th className="text-left font-medium px-4 py-3 whitespace-nowrap">聯絡人</th>
+                <th className="text-left font-medium px-4 py-3 whitespace-nowrap">職務</th>
+                <th className="text-left font-medium px-4 py-3 whitespace-nowrap">電話</th>
+                <th className="text-left font-medium px-4 py-3 whitespace-nowrap">Email</th>
+                {canViewFinancials && (
+                  <th className="text-right font-medium px-4 py-3 whitespace-nowrap">贊助金額</th>
+                )}
+                <th className="text-right font-medium px-4 py-3 w-10"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {sponsors.map((sponsor) => {
+                const tierColor = SPONSOR_TIER_COLOR_MAP[sponsor.tier] ?? "";
+                return (
+                  <tr
+                    key={sponsor.id}
+                    className="border-b last:border-b-0 hover:bg-muted/30 transition-colors cursor-pointer"
+                    onClick={() => handleEdit(sponsor)}
+                  >
+                    {/* Name + Logo */}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 shrink-0 rounded-lg bg-white ring-1 ring-foreground/10 flex items-center justify-center overflow-hidden">
+                          {sponsor.logo ? (
+                            <img
+                              src={sponsor.logo}
+                              alt={sponsor.name}
+                              className="h-full w-full object-contain p-1"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                            />
+                          ) : (
+                            <span className="text-sm font-bold text-muted-foreground">{sponsor.name[0]}</span>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-medium truncate max-w-[180px]">{sponsor.name}</div>
+                          {sponsor.website && (
+                            <a
+                              href={sponsor.website}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                              官網
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Tier */}
+                    <td className="px-4 py-3">
+                      <Badge variant="secondary" className={`text-xs ${tierColor}`}>
+                        {SPONSOR_TIER_MAP[sponsor.tier] ?? sponsor.tier}
+                      </Badge>
+                    </td>
+
+                    {/* Status */}
+                    <td className="px-4 py-3">
+                      <Badge variant="outline" className="text-xs">
+                        {SPONSOR_STATUS_MAP[sponsor.status] ?? sponsor.status}
+                      </Badge>
+                    </td>
+
+                    {/* Industry */}
+                    <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
+                      {sponsor.industry || "—"}
+                    </td>
+
+                    {/* Contact Name */}
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {sponsor.contactName || <span className="text-muted-foreground">—</span>}
+                    </td>
+
+                    {/* Contact Title */}
+                    <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">
+                      {sponsor.contactTitle || "—"}
+                    </td>
+
+                    {/* Phone */}
+                    <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">
+                      {sponsor.contactPhone || "—"}
+                    </td>
+
+                    {/* Email */}
+                    <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">
+                      {sponsor.contactEmail || "—"}
+                    </td>
+
+                    {/* Fee (admin only) */}
+                    {canViewFinancials && (
+                      <td className="px-4 py-3 text-right whitespace-nowrap">
+                        {sponsor.sponsorFee != null ? (
+                          <span className="flex items-center justify-end gap-1 text-destructive font-medium">
+                            <Lock className="h-3 w-3" />
+                            {formatNTD(sponsor.sponsorFee)}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">未填</span>
+                        )}
+                      </td>
+                    )}
+
+                    {/* Actions */}
+                    <td className="px-4 py-3 text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          render={
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          }
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(sponsor); }}>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            編輯
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); deleteSponsor(sponsor.id); }}>
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            刪除
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 

@@ -1,0 +1,14 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:3001",
+      "localStorage": [
+        {
+          "name": "sb-htlqhhwofleakrvlmtfo-auth-token",
+          "value": "{\"access_token\":\"eyJhbGciOiJFUzI1NiIsImtpZCI6ImQxOWJmZjlmLTY3ZjAtNDAzZS1hZDRlLTViNjljMDE2Y2I1NCIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2h0bHFoaHdvZmxlYWtydmxtdGZvLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiJkMWYyODMzMy01MmUyLTQ2MmEtYjRiOC04NTM2ZGVhZWRmMzEiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzc2Mjg1Nzc2LCJpYXQiOjE3NzYyODIxNzYsImVtYWlsIjoibWFyay50c2FvQHdlYmxpbmsuY29tLnR3IiwicGhvbmUiOiIiLCJhcHBfbWV0YWRhdGEiOnsicHJvdmlkZXIiOiJlbWFpbCIsInByb3ZpZGVycyI6WyJlbWFpbCJdfSwidXNlcl9tZXRhZGF0YSI6eyJlbWFpbF92ZXJpZmllZCI6dHJ1ZX0sInJvbGUiOiJhdXRoZW50aWNhdGVkIiwiYWFsIjoiYWFsMSIsImFtciI6W3sibWV0aG9kIjoicGFzc3dvcmQiLCJ0aW1lc3RhbXAiOjE3NzYyODIxNzZ9XSwic2Vzc2lvbl9pZCI6IjMwNzA2ZDBjLTJmODUtNDIwMS04NTQzLWRlNzJkNjAxZjU2YyIsImlzX2Fub255bW91cyI6ZmFsc2V9.SdxXlesW1EkV2gcf15_90su_lisZ83n1RgsKYtmBzGBNKSTWBijeFRFNI74KV_adCufk0enBLKQgHuEMY6xqMw\",\"token_type\":\"bearer\",\"expires_in\":3600,\"expires_at\":1776285776,\"refresh_token\":\"sbuhsx43zmcq\",\"user\":{\"id\":\"d1f28333-52e2-462a-b4b8-8536deaedf31\",\"aud\":\"authenticated\",\"role\":\"authenticated\",\"email\":\"mark.tsao@weblink.com.tw\",\"email_confirmed_at\":\"2026-04-15T18:07:06.628982Z\",\"phone\":\"\",\"confirmed_at\":\"2026-04-15T18:07:06.628982Z\",\"last_sign_in_at\":\"2026-04-15T19:42:56.477158211Z\",\"app_metadata\":{\"provider\":\"email\",\"providers\":[\"email\"]},\"user_metadata\":{\"email_verified\":true},\"identities\":[{\"identity_id\":\"27a590e0-1e19-45e2-9d79-e57e1f4e8b80\",\"id\":\"d1f28333-52e2-462a-b4b8-8536deaedf31\",\"user_id\":\"d1f28333-52e2-462a-b4b8-8536deaedf31\",\"identity_data\":{\"email\":\"mark.tsao@weblink.com.tw\",\"email_verified\":false,\"phone_verified\":false,\"sub\":\"d1f28333-52e2-462a-b4b8-8536deaedf31\"},\"provider\":\"email\",\"last_sign_in_at\":\"2026-03-16T15:58:38.445365Z\",\"created_at\":\"2026-03-16T15:58:38.445414Z\",\"updated_at\":\"2026-03-16T15:58:38.445414Z\",\"email\":\"mark.tsao@weblink.com.tw\"}],\"created_at\":\"2026-03-16T15:58:38.443812Z\",\"updated_at\":\"2026-04-15T19:42:56.480609Z\",\"is_anonymous\":false},\"weak_password\":null}"
+        }
+      ]
+    }
+  ]
+}

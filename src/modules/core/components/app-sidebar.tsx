@@ -12,10 +12,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarFooter,
 } from "@/components/ui/sidebar";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { NAV_ITEMS } from "../constants/navigation";
 import { CalendarCheck } from "lucide-react";
 
@@ -24,14 +21,14 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="border-b px-4 h-14 flex items-center justify-start">
+      <SidebarHeader className="!flex-row border-b px-4 h-14 items-center gap-0">
         <Link href="/dashboard" className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shrink-0">
             <CalendarCheck className="h-4 w-4" />
           </div>
           <div>
-            <h2 className="text-sm font-bold tracking-tight">Event Hub</h2>
-            <p className="text-[10px] text-muted-foreground">行銷活動管理平台</p>
+            <h2 className="text-sm font-bold tracking-tight leading-tight">Event Hub</h2>
+            <p className="text-[10px] text-muted-foreground leading-tight">行銷活動管理平台</p>
           </div>
         </Link>
       </SidebarHeader>
@@ -40,7 +37,7 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupLabel>管理</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-1.5">
               {NAV_ITEMS.map((item) => {
                 const isActive =
                   pathname === item.href ||
@@ -53,7 +50,7 @@ export function AppSidebar() {
                       render={<Link href={item.href} />}
                     >
                       <item.icon className="h-5 w-5" />
-                      <span className="text-base">{item.title}</span>
+                      <span className="text-lg">{item.title}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );
@@ -63,24 +60,6 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t px-4 py-3">
-        <div className="flex items-center gap-2.5">
-          <Avatar className="h-8 w-8">
-            <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-              MK
-            </AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium truncate">Mark</p>
-            <p className="text-[10px] text-muted-foreground truncate">
-              mark@weblink.com.tw
-            </p>
-          </div>
-          <Badge variant="secondary" className="text-[10px] shrink-0">
-            Admin
-          </Badge>
-        </div>
-      </SidebarFooter>
     </Sidebar>
   );
 }

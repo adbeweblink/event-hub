@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { toast } from "sonner";
+import { supabase } from "@/shared/lib/supabase";
 import type { SponsorTier, SponsorStatus } from "../constants";
 
 export interface SponsorRecord {
@@ -15,100 +17,85 @@ export interface SponsorRecord {
   contactTitle: string;
   contactPhone: string;
   contactEmail: string;
-  // === 機密欄位（僅超級管理員可見）===
-  sponsorFee: number | null;      // 贊助金額（含稅 NTD）
-  sponsorBenefits: string;        // 贊助權益內容
-  contractNote: string;           // 合約備註
-  // ===================================
+  sponsorFee: number | null;
+  sponsorBenefits: string;
+  contractNote: string;
   notes: string;
+  vendorId: string | null;
   pastEvents: string[];
   createdAt: string;
   updatedAt: string;
 }
 
-// Logo：全部用本地檔案（public/logos/），domain → filename mapping
-const DOMAIN_TO_FILE: Record<string, string> = {
-  "adobe.com": "adobe",
-  "microsoft.com": "microsoft",
-  "intel.com": "intel",
-  "amd.com": "amd",
-  "nvidia.com": "nvidia",
-  "wacom.com": "wacom",
-  "logitech.com": "logitech",
-  "asus.com": "asus",
-  "msi.com": "msi",
-  "lenovo.com": "lenovo",
-  "gigabyte.com": "gigabyte",
-  "apple.com": "apple",
-  "benq.com": "benq",
-  "lg.com": "lg",
-  "sony.com": "sony",
-  "pantone.com": "pantone",
-  "westerndigital.com": "westerndigital",
-  "qnap.com": "qnap",
-  "incgmedia.com": "incgmedia",
-  "dynacw.com.tw": "dynacw",
-  "reallusion.com": "reallusion",
-  "leadtek.com": "leadtek",
-};
-
-function logo(domain: string) {
-  const file = DOMAIN_TO_FILE[domain];
-  return file ? `/logos/${file}.png` : "";
-}
-
-function sp(id: string, name: string, tier: SponsorTier, status: SponsorStatus, domain: string, industry: string, benefits: string, notes: string = "", pastEvents: string[] = []): SponsorRecord {
+function rowToRecord(r: Record<string, unknown>, pastEvents: string[] = []): SponsorRecord {
   return {
-    id, name, tier, status,
-    logo: domain ? logo(domain) : "",
-    website: domain ? `https://${domain}` : "",
-    industry,
-    contactName: "", contactTitle: "", contactPhone: "", contactEmail: "",
-    sponsorFee: null, sponsorBenefits: benefits, contractNote: "",
-    notes, pastEvents,
-    createdAt: "2025-01-01", updatedAt: "2026-04-10",
+    id: r.id as string,
+    name: r.name as string,
+    tier: r.tier as SponsorTier,
+    status: r.status as SponsorStatus,
+    logo: (r.logo as string) ?? "",
+    website: (r.website as string) ?? "",
+    industry: (r.industry as string) ?? "",
+    contactName: (r.contact_name as string) ?? "",
+    contactTitle: (r.contact_title as string) ?? "",
+    contactPhone: (r.contact_phone as string) ?? "",
+    contactEmail: (r.contact_email as string) ?? "",
+    sponsorFee: r.sponsor_fee as number | null,
+    sponsorBenefits: (r.sponsor_benefits as string) ?? "",
+    contractNote: (r.contract_note as string) ?? "",
+    notes: (r.notes as string) ?? "",
+    vendorId: (r.vendor_id as string) ?? null,
+    pastEvents,
+    createdAt: r.created_at as string,
+    updatedAt: r.updated_at as string,
   };
 }
-
-const INITIAL: SponsorRecord[] = [
-  // ===== 核心夥伴 =====
-  sp("sp1", "Adobe", "platinum", "active", "adobe.com", "軟體", "主視覺露出、講者提供、產品授權", "原廠合作夥伴", ["AI 快充學堂 2026"]),
-  sp("sp2", "Microsoft", "platinum", "active", "microsoft.com", "軟體", "雲端服務、Copilot 展示", ""),
-  // ===== 硬體 =====
-  sp("sp3", "Intel", "gold", "active", "intel.com", "CPU", "效能展示、聯合行銷"),
-  sp("sp4", "AMD", "gold", "negotiating", "amd.com", "CPU", "效能展示"),
-  sp("sp5", "NVIDIA", "gold", "active", "nvidia.com", "GPU", "GPU 加速展示、AI 算力"),
-  sp("sp6", "Wacom", "gold", "active", "wacom.com", "周邊", "繪圖板體驗區、活動禮品", "", ["AI 快充學堂 — Illustrator"]),
-  sp("sp7", "Logitech", "silver", "negotiating", "logitech.com", "周邊", "周邊設備體驗"),
-  // ===== 工作站 =====
-  sp("sp8", "ASUS ProArt", "gold", "active", "asus.com", "工作站", "ProArt 工作站展示"),
-  sp("sp9", "MSI", "silver", "active", "msi.com", "工作站", "創作者筆電展示"),
-  sp("sp10", "Lenovo", "silver", "negotiating", "lenovo.com", "工作站", "ThinkPad 工作站"),
-  sp("sp11", "GIGABYTE", "silver", "negotiating", "gigabyte.com", "工作站", "AERO 創作者筆電"),
-  sp("sp12", "Apple", "gold", "active", "apple.com", "工作站", "Mac 生態系展示"),
-  // ===== 螢幕/色彩 =====
-  sp("sp13", "BenQ", "gold", "negotiating", "benq.com", "螢幕", "色準螢幕展示、色彩管理沙龍"),
-  sp("sp14", "LG", "silver", "negotiating", "lg.com", "螢幕", "UltraFine 螢幕"),
-  sp("sp15", "Sony", "silver", "negotiating", "sony.com", "螢幕/相機", "專業顯示器"),
-  sp("sp16", "Pantone", "silver", "active", "pantone.com", "色彩", "色彩趨勢分享"),
-  // ===== 儲存 =====
-  sp("sp17", "SanDisk Pro", "silver", "active", "westerndigital.com", "儲存", "高速儲存展示"),
-  sp("sp18", "QNAP", "silver", "active", "qnap.com", "NAS", "NAS 創作者方案"),
-  // ===== 媒體 =====
-  sp("sp19", "映 CG / INCG Media", "media", "active", "incgmedia.com", "媒體", "活動報導、社群曝光、場地提供"),
-  // ===== 其他 =====
-  sp("sp20", "華康 DynaFont", "reciprocal", "active", "dynacw.com.tw", "字型", "字型授權、字型設計沙龍"),
-  sp("sp21", "Reallusion", "reciprocal", "active", "reallusion.com", "3D/動畫", "iClone/Character Creator 展示"),
-  sp("sp22", "Leadtek 麗臺", "silver", "active", "leadtek.com", "GPU", "專業繪圖卡展示"),
-];
 
 export type SponsorFormData = Omit<SponsorRecord, "id" | "createdAt" | "updatedAt">;
 
 export function useSponsors() {
-  const [sponsors, setSponsors] = useState<SponsorRecord[]>(INITIAL);
+  const [sponsors, setSponsors] = useState<SponsorRecord[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [tierFilter, setTierFilter] = useState<SponsorTier | "all">("all");
   const [statusFilter, setStatusFilter] = useState<SponsorStatus | "all">("all");
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      const { data: rows } = await supabase.from("sponsors").select("*").order("name");
+      const { data: events } = await supabase.from("sponsor_past_events").select("*");
+      if (cancelled) return;
+      if (rows) {
+        const eventMap = new Map<string, string[]>();
+        for (const e of events ?? []) {
+          const list = eventMap.get(e.sponsor_id) ?? [];
+          list.push(e.event_name);
+          eventMap.set(e.sponsor_id, list);
+        }
+        setSponsors(rows.map((r) => rowToRecord(r, eventMap.get(r.id) ?? [])));
+      }
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  async function fetchSponsors() {
+    setLoading(true);
+    const { data: rows } = await supabase.from("sponsors").select("*").order("name");
+    const { data: events } = await supabase.from("sponsor_past_events").select("*");
+    if (rows) {
+      const eventMap = new Map<string, string[]>();
+      for (const e of events ?? []) {
+        const list = eventMap.get(e.sponsor_id) ?? [];
+        list.push(e.event_name);
+        eventMap.set(e.sponsor_id, list);
+      }
+      setSponsors(rows.map((r) => rowToRecord(r, eventMap.get(r.id) ?? [])));
+    }
+    setLoading(false);
+  }
 
   const filtered = useMemo(() => {
     return sponsors.filter((s) => {
@@ -124,29 +111,64 @@ export function useSponsors() {
     });
   }, [sponsors, search, tierFilter, statusFilter]);
 
-  const addSponsor = useCallback((data: SponsorFormData) => {
-    const now = new Date().toISOString().slice(0, 10);
-    setSponsors((prev) => [
-      { ...data, id: `sp${Date.now()}`, createdAt: now, updatedAt: now },
-      ...prev,
-    ]);
+  const addSponsor = useCallback(async (data: SponsorFormData) => {
+    const { data: row, error } = await supabase.from("sponsors").insert({
+      name: data.name, tier: data.tier, status: data.status,
+      logo: data.logo, website: data.website, industry: data.industry,
+      contact_name: data.contactName, contact_title: data.contactTitle,
+      contact_phone: data.contactPhone, contact_email: data.contactEmail,
+      sponsor_fee: data.sponsorFee, sponsor_benefits: data.sponsorBenefits,
+      contract_note: data.contractNote, notes: data.notes,
+      vendor_id: data.vendorId || null,
+    }).select().single();
+    if (!error && row) {
+      setSponsors((prev) => [rowToRecord(row, []), ...prev]);
+      toast.success("贊助商已新增");
+    } else if (error) {
+      toast.error("新增失敗");
+    }
   }, []);
 
-  const updateSponsor = useCallback((id: string, updates: Partial<SponsorRecord>) => {
-    setSponsors((prev) =>
-      prev.map((s) =>
-        s.id === id ? { ...s, ...updates, updatedAt: new Date().toISOString().slice(0, 10) } : s
-      )
-    );
+  const updateSponsor = useCallback(async (id: string, updates: Partial<SponsorFormData>) => {
+    const patch: Record<string, unknown> = {};
+    if (updates.name !== undefined) patch.name = updates.name;
+    if (updates.tier !== undefined) patch.tier = updates.tier;
+    if (updates.status !== undefined) patch.status = updates.status;
+    if (updates.logo !== undefined) patch.logo = updates.logo;
+    if (updates.website !== undefined) patch.website = updates.website;
+    if (updates.industry !== undefined) patch.industry = updates.industry;
+    if (updates.contactName !== undefined) patch.contact_name = updates.contactName;
+    if (updates.contactTitle !== undefined) patch.contact_title = updates.contactTitle;
+    if (updates.contactPhone !== undefined) patch.contact_phone = updates.contactPhone;
+    if (updates.contactEmail !== undefined) patch.contact_email = updates.contactEmail;
+    if (updates.sponsorFee !== undefined) patch.sponsor_fee = updates.sponsorFee;
+    if (updates.sponsorBenefits !== undefined) patch.sponsor_benefits = updates.sponsorBenefits;
+    if (updates.contractNote !== undefined) patch.contract_note = updates.contractNote;
+    if (updates.notes !== undefined) patch.notes = updates.notes;
+    if (updates.vendorId !== undefined) patch.vendor_id = updates.vendorId || null;
+    const { data: row, error } = await supabase.from("sponsors").update(patch).eq("id", id).select().single();
+    if (!error && row) {
+      setSponsors((prev) => prev.map((s) => s.id === id ? { ...rowToRecord(row, s.pastEvents) } : s));
+      toast.success("贊助商已更新");
+    } else if (error) {
+      toast.error("更新失敗");
+    }
   }, []);
 
-  const deleteSponsor = useCallback((id: string) => {
-    setSponsors((prev) => prev.filter((s) => s.id !== id));
+  const deleteSponsor = useCallback(async (id: string) => {
+    const { error } = await supabase.from("sponsors").delete().eq("id", id);
+    if (!error) {
+      setSponsors((prev) => prev.filter((s) => s.id !== id));
+      toast.success("贊助商已刪除");
+    } else {
+      toast.error("刪除失敗");
+    }
   }, []);
 
   return {
     sponsors: filtered,
     totalCount: sponsors.length,
+    loading,
     search, setSearch,
     tierFilter, setTierFilter,
     statusFilter, setStatusFilter,

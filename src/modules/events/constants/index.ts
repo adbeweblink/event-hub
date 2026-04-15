@@ -1,21 +1,40 @@
-// Adobe FY 制：Q1=12-2月, Q2=3-5月, Q3=6-8月, Q4=9-11月
+// 會計年度系統
+export type FYSystem = "adobe" | "weblink";
+
+export const FY_SYSTEMS: { value: FYSystem; label: string }[] = [
+  { value: "adobe", label: "Adobe FY" },
+  { value: "weblink", label: "Weblink FY" },
+];
+
 export type FiscalQuarter = "Q1" | "Q2" | "Q3" | "Q4";
 
-export const FISCAL_QUARTERS: { value: FiscalQuarter; label: string; months: string }[] = [
+// Adobe FY: Q1=12-2月, Q2=3-5月, Q3=6-8月, Q4=9-11月
+export const ADOBE_FY_QUARTERS: { value: FiscalQuarter; label: string; months: string }[] = [
   { value: "Q1", label: "Q1", months: "12 月 – 2 月" },
   { value: "Q2", label: "Q2", months: "3 月 – 5 月" },
   { value: "Q3", label: "Q3", months: "6 月 – 8 月" },
   { value: "Q4", label: "Q4", months: "9 月 – 11 月" },
 ];
 
-export type EventType = "seminar" | "workshop" | "launch" | "press" | "webinar" | "other";
+// Weblink FY (一般制): Q1=1-3月, Q2=4-6月, Q3=7-9月, Q4=10-12月
+export const WEBLINK_FY_QUARTERS: { value: FiscalQuarter; label: string; months: string }[] = [
+  { value: "Q1", label: "Q1", months: "1 月 – 3 月" },
+  { value: "Q2", label: "Q2", months: "4 月 – 6 月" },
+  { value: "Q3", label: "Q3", months: "7 月 – 9 月" },
+  { value: "Q4", label: "Q4", months: "10 月 – 12 月" },
+];
+
+export function getFYQuarters(system: FYSystem) {
+  return system === "adobe" ? ADOBE_FY_QUARTERS : WEBLINK_FY_QUARTERS;
+}
+
+export type EventType = "seminar" | "workshop" | "launch" | "press" | "other";
 
 export const EVENT_TYPES: { value: EventType; label: string }[] = [
   { value: "seminar", label: "研討會" },
   { value: "workshop", label: "工作坊" },
   { value: "launch", label: "發表會" },
   { value: "press", label: "記者會" },
-  { value: "webinar", label: "線上直播" },
   { value: "other", label: "其他" },
 ];
 
@@ -93,6 +112,21 @@ export const PERSON_STATUSES: { value: PersonStatus; label: string; color: strin
 export const PERSON_STATUS_MAP = Object.fromEntries(
   PERSON_STATUSES.map((s) => [s.value, s.label])
 ) as Record<PersonStatus, string>;
+
+// Partner roles (贊助/合作角色)
+export type PartnerRole = "organizer" | "co_organizer" | "co_sponsor" | "partner" | "media";
+
+export const PARTNER_ROLES: { value: PartnerRole; label: string; required: boolean }[] = [
+  { value: "organizer", label: "主辦單位", required: true },
+  { value: "co_organizer", label: "合辦單位", required: false },
+  { value: "co_sponsor", label: "協辦單位", required: false },
+  { value: "partner", label: "合作夥伴", required: true },
+  { value: "media", label: "媒體協力", required: false },
+];
+
+export const PARTNER_ROLE_MAP = Object.fromEntries(
+  PARTNER_ROLES.map((r) => [r.value, r.label])
+) as Record<PartnerRole, string>;
 
 // Marketing channels
 export const MARKETING_CHANNELS = [

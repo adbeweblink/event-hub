@@ -192,16 +192,6 @@ function VenueCard({
           <p className="text-sm text-muted-foreground line-clamp-2">{venue.notes}</p>
         )}
 
-        {/* Past Events */}
-        {venue.pastEvents.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {venue.pastEvents.map((name) => (
-              <Badge key={name} variant="outline" className="text-xs">
-                {name}
-              </Badge>
-            ))}
-          </div>
-        )}
       </CardContent>
     </Card>
   );
@@ -246,7 +236,7 @@ export function VenueList() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">場地資料庫</h1>
+          <h1 className="text-2xl font-bold tracking-tight">場館瀏覽</h1>
           <p className="text-sm text-muted-foreground">
             共 {totalCount} 個場地 · 顯示 {venues.length} 筆
           </p>

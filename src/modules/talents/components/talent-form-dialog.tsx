@@ -2,22 +2,18 @@
 
 import { useState, useEffect } from "react";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { TALENT_TYPES, SPEAKER_SUB_TYPES, FEE_UNIT_OPTIONS } from "../constants";
+import { SPEAKER_SUB_TYPES, FEE_UNIT_OPTIONS } from "../constants";
 import { StarRatingInput } from "@/shared/components/stars";
 import { nativeSelectCn } from "@/shared/lib/styles";
 import { Sparkles, Loader2, X } from "lucide-react";
 import { useSettings } from "@/modules/core/hooks/use-settings";
-import type { TalentType, SpeakerSubType, FeeUnit } from "../constants";
+import type { SpeakerSubType, FeeUnit } from "../constants";
 import type { TalentRecord, TalentFormData } from "../hooks/use-talents";
 
 interface Props {
@@ -29,7 +25,6 @@ interface Props {
 
 const EMPTY: TalentFormData = {
   name: "",
-  type: "speaker",
   subType: "",
   title: "",
   company: "",
@@ -43,7 +38,6 @@ const EMPTY: TalentFormData = {
   socialLinks: [],
   notes: "",
   rating: 3,
-  pastEvents: [],
 };
 
 export function TalentFormDialog({ open, onClose, onSubmit, initial }: Props) {
@@ -58,7 +52,6 @@ export function TalentFormDialog({ open, onClose, onSubmit, initial }: Props) {
     if (initial) {
       setForm({
         name: initial.name,
-        type: initial.type,
         subType: initial.subType,
         title: initial.title,
         company: initial.company,
@@ -72,7 +65,6 @@ export function TalentFormDialog({ open, onClose, onSubmit, initial }: Props) {
         socialLinks: initial.socialLinks,
         notes: initial.notes,
         rating: initial.rating,
-        pastEvents: initial.pastEvents,
       });
     } else {
       setForm(EMPTY);
@@ -126,8 +118,7 @@ export function TalentFormDialog({ open, onClose, onSubmit, initial }: Props) {
   "specialties": ["專長1","專長2"],
   "bio": "簡介（2-3句）",
   "contactEmail": "email（如公開）",
-  "socialLinks": ["IG/LinkedIn/YouTube 連結"],
-  "talentType": "speaker/host/kol/consultant/other"
+  "socialLinks": ["IG/LinkedIn/YouTube 連結"]
 }
 只回傳 JSON。查不到填空字串或空陣列。` }] }],
             generationConfig: { temperature: 0.1, responseMimeType: "application/json" },
@@ -146,7 +137,6 @@ export function TalentFormDialog({ open, onClose, onSubmit, initial }: Props) {
         bio: result.bio || prev.bio,
         contactEmail: result.contactEmail || prev.contactEmail,
         socialLinks: result.socialLinks?.length ? result.socialLinks : prev.socialLinks,
-        type: (result.talentType as TalentType) || prev.type,
       }));
     } catch (err) {
       setAiError(err instanceof Error ? err.message : "AI 填入失敗");
@@ -189,38 +179,21 @@ export function TalentFormDialog({ open, onClose, onSubmit, initial }: Props) {
           </div>
           {aiError && <p className="text-sm text-destructive">{aiError}</p>}
 
-          {/* Type + SubType + Title + Company */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {/* SubType + Title + Company */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">類型</label>
+              <label className="text-sm font-medium">講者分類</label>
               <select
                 className={nativeSelectCn}
-                value={form.type}
-                onChange={(e) => {
-                  set("type", e.target.value as TalentType);
-                  if (e.target.value !== "speaker") set("subType", "");
-                }}
+                value={form.subType}
+                onChange={(e) => set("subType", e.target.value as SpeakerSubType)}
               >
-                {TALENT_TYPES.map((t) => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
+                <option value="">未分類</option>
+                {SPEAKER_SUB_TYPES.map((s) => (
+                  <option key={s.value} value={s.value}>{s.label}</option>
                 ))}
               </select>
             </div>
-            {form.type === "speaker" && (
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">講者分類</label>
-                <select
-                  className={nativeSelectCn}
-                  value={form.subType}
-                  onChange={(e) => set("subType", e.target.value as SpeakerSubType)}
-                >
-                  <option value="">未分類</option>
-                  {SPEAKER_SUB_TYPES.map((s) => (
-                    <option key={s.value} value={s.value}>{s.label}</option>
-                  ))}
-                </select>
-              </div>
-            )}
             <div className="space-y-1.5">
               <label className="text-sm font-medium">職稱</label>
               <Input

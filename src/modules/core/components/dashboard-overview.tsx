@@ -1,164 +1,36 @@
 "use client";
 
+import { useEffect, useState, useMemo, useCallback } from "react";
+import Link from "next/link";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
-  Calendar,
-  Clock,
-  TrendingUp,
-  AlertTriangle,
-  CheckCircle2,
-  Circle,
+  Calendar, Clock, TrendingUp, AlertTriangle, CheckCircle2, Circle, ChevronDown,
 } from "lucide-react";
-import { useMemo } from "react";
-import { formatNTD } from "@/shared/lib/format";
-import type { EventSummary, TodoItem } from "@/shared/types";
+import { Skeleton } from "@/components/ui/skeleton";
+import { supabase } from "@/shared/lib/supabase";
+import { daysUntil } from "@/shared/lib/format";
+import { EVENT_TYPE_MAP, EVENT_STATUS_MAP, EVENT_STATUSES } from "@/modules/events/constants";
 
-// ===== Mock Data（之後換成 Supabase 查詢）=====
+interface EventRow {
+  id: string;
+  name: string;
+  type: string;
+  format: string;
+  status: string;
+  tentative_dates: string[];
+  confirmed_date: string | null;
+  expected_attendees: number;
+  completion_percent: number;
+  created_at: string;
+}
 
-const MOCK_EVENTS: EventSummary[] = [
-  {
-    id: "1",
-    name: "2026 Adobe MAX 台灣站",
-    type: "launch",
-    format: "hybrid",
-    status: "preparing",
-    date: "2026-05-15",
-    endDate: "2026-05-16",
-    daysLeft: 33,
-    completionPercent: 62,
-    totalBudget: 850000,
-    spentBudget: 420000,
-    owner: "Mark",
-  },
-  {
-    id: "2",
-    name: "Q2 合作夥伴研討會",
-    type: "seminar",
-    format: "onsite",
-    status: "planning",
-    date: "2026-06-10",
-    daysLeft: 59,
-    completionPercent: 28,
-    totalBudget: 320000,
-    spentBudget: 45000,
-    owner: "Irene",
-  },
-  {
-    id: "3",
-    name: "Creative Cloud 線上工作坊",
-    type: "workshop",
-    format: "online",
-    status: "executing",
-    date: "2026-04-18",
-    daysLeft: 6,
-    completionPercent: 85,
-    totalBudget: 120000,
-    spentBudget: 98000,
-    owner: "Mark",
-  },
-  {
-    id: "4",
-    name: "媒體記者發表會",
-    type: "press",
-    format: "onsite",
-    status: "draft",
-    date: "2026-07-20",
-    daysLeft: 99,
-    completionPercent: 5,
-    totalBudget: 500000,
-    spentBudget: 0,
-    owner: "Joy",
-  },
-];
-
-const MOCK_TODOS: TodoItem[] = [
-  {
-    id: "t1",
-    eventId: "3",
-    eventName: "Creative Cloud 線上工作坊",
-    title: "確認講師簡報內容",
-    dueDate: "2026-04-14",
-    priority: "urgent",
-    assignee: "Mark",
-    completed: false,
-  },
-  {
-    id: "t2",
-    eventId: "3",
-    eventName: "Creative Cloud 線上工作坊",
-    title: "測試直播平台穩定度",
-    dueDate: "2026-04-15",
-    priority: "high",
-    assignee: "Irene",
-    completed: false,
-  },
-  {
-    id: "t3",
-    eventId: "1",
-    eventName: "2026 Adobe MAX 台灣站",
-    title: "場地合約簽回",
-    dueDate: "2026-04-18",
-    priority: "high",
-    assignee: "Mark",
-    completed: false,
-  },
-  {
-    id: "t4",
-    eventId: "1",
-    eventName: "2026 Adobe MAX 台灣站",
-    title: "向三家攝影公司索取報價",
-    dueDate: "2026-04-20",
-    priority: "medium",
-    assignee: "Joy",
-    completed: false,
-  },
-  {
-    id: "t5",
-    eventId: "2",
-    eventName: "Q2 合作夥伴研討會",
-    title: "確認講者名單",
-    dueDate: "2026-04-25",
-    priority: "medium",
-    assignee: "Mark",
-    completed: false,
-  },
-  {
-    id: "t6",
-    eventId: "1",
-    eventName: "2026 Adobe MAX 台灣站",
-    title: "確認餐飲廠商（buffet vs 便當）",
-    dueDate: "2026-04-28",
-    priority: "low",
-    assignee: "Irene",
-    completed: true,
-  },
-];
-
-// ===== Helpers =====
-
-const STATUS_MAP: Record<string, { label: string; color: string }> = {
-  draft: { label: "草稿", color: "bg-gray-100 text-gray-700" },
-  planning: { label: "規劃中", color: "bg-blue-100 text-blue-700" },
-  preparing: { label: "準備中", color: "bg-amber-100 text-amber-700" },
-  executing: { label: "執行中", color: "bg-green-100 text-green-700" },
-  closing: { label: "結案中", color: "bg-purple-100 text-purple-700" },
-  archived: { label: "已封存", color: "bg-gray-100 text-gray-500" },
-};
-
-const PRIORITY_MAP: Record<string, { label: string; color: string }> = {
-  urgent: { label: "緊急", color: "bg-red-100 text-red-700" },
-  high: { label: "高", color: "bg-orange-100 text-orange-700" },
-  medium: { label: "中", color: "bg-blue-100 text-blue-700" },
-  low: { label: "低", color: "bg-gray-100 text-gray-600" },
-};
+const STATUS_COLORS: Record<string, string> = Object.fromEntries(
+  EVENT_STATUSES.map((s) => [s.value, s.color])
+);
 
 function daysLeftColor(days: number) {
   if (days <= 7) return "text-red-600";
@@ -166,19 +38,7 @@ function daysLeftColor(days: number) {
   return "text-muted-foreground";
 }
 
-// ===== Components =====
-
-function StatCard({
-  title,
-  value,
-  sub,
-  icon: Icon,
-}: {
-  title: string;
-  value: string | number;
-  sub: string;
-  icon: React.ElementType;
-}) {
+function StatCard({ title, value, sub, icon: Icon }: { title: string; value: string | number; sub: string; icon: React.ElementType }) {
   return (
     <Card className="ring-1 ring-foreground/10">
       <CardContent className="flex items-center gap-4 p-5">
@@ -195,159 +55,200 @@ function StatCard({
   );
 }
 
-function EventCard({ event }: { event: EventSummary }) {
-  const status = STATUS_MAP[event.status] ?? STATUS_MAP.draft;
+interface TodoRow {
+  id: string;
+  label: string;
+  done: boolean;
+  event_id: string;
+  event_name?: string;
+}
+
+function TodosCard({ todos }: { todos: TodoRow[] }) {
+  const [open, setOpen] = useState(false);
   return (
-    <Card className="ring-1 ring-foreground/10 hover:shadow-md transition-all cursor-pointer">
-      <CardContent className="p-5 space-y-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <h3 className="font-semibold text-base truncate">{event.name}</h3>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {event.date}
-              {event.endDate ? ` ~ ${event.endDate}` : ""} · {event.owner}
-            </p>
-          </div>
-          <Badge variant="secondary" className={`shrink-0 text-xs ${status.color}`}>
-            {status.label}
-          </Badge>
+    <Card className="ring-1 ring-foreground/10">
+      <button
+        className="flex w-full items-center justify-between p-5 pb-3 text-left"
+        onClick={() => setOpen(!open)}
+      >
+        <div>
+          <h3 className="text-base font-semibold">待辦事項</h3>
+          <p className="text-sm text-muted-foreground">{todos.length} 項未完成（跨活動）</p>
         </div>
-
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">完成度</span>
-            <span className="font-medium">{event.completionPercent}%</span>
-          </div>
-          <Progress value={event.completionPercent} className="h-2.5" />
-        </div>
-
-        <div className="flex items-center justify-between text-sm">
-          <span className={`font-medium ${daysLeftColor(event.daysLeft)}`}>
-            {event.daysLeft <= 0 ? "已過期" : `剩 ${event.daysLeft} 天`}
-          </span>
-          <span className="text-muted-foreground">
-            {formatNTD(event.spentBudget)} / {formatNTD(event.totalBudget)}
-          </span>
-        </div>
-      </CardContent>
+        <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <CardContent className="pt-0">
+          {todos.map((t) => (
+            <Link key={t.id} href={`/events/${t.event_id}`} className="flex items-center gap-3 py-2.5 border-b last:border-0 hover:bg-muted/50 rounded-md px-2 -mx-2 transition-colors">
+              <Circle className="h-4 w-4 text-muted-foreground shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm">{t.label}</p>
+                {t.event_name && <p className="text-xs text-muted-foreground">{t.event_name}</p>}
+              </div>
+            </Link>
+          ))}
+        </CardContent>
+      )}
     </Card>
   );
 }
 
-function TodoRow({ item }: { item: TodoItem }) {
-  const priority = PRIORITY_MAP[item.priority] ?? PRIORITY_MAP.medium;
-  return (
-    <div className="flex items-center gap-3 py-3 px-1 border-b last:border-0">
-      {item.completed ? (
-        <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
-      ) : (
-        <Circle className="h-5 w-5 text-muted-foreground shrink-0" />
-      )}
-      <div className="min-w-0 flex-1">
-        <p
-          className={`text-base ${item.completed ? "line-through text-muted-foreground" : ""}`}
-        >
-          {item.title}
-        </p>
-        <p className="text-xs text-muted-foreground truncate">
-          {item.eventName} · {item.assignee ?? "未指派"} · {item.dueDate}
-        </p>
-      </div>
-      <Badge variant="secondary" className={`text-xs shrink-0 ${priority.color}`}>
-        {priority.label}
-      </Badge>
-    </div>
-  );
-}
-
-// ===== Main =====
-
 export function DashboardOverview() {
-  const activeEvents = useMemo(() => MOCK_EVENTS.filter((e) => e.status !== "archived"), []);
-  const urgentCount = useMemo(() => MOCK_EVENTS.filter((e) => e.daysLeft <= 7 && e.status !== "archived").length, []);
-  const totalBudget = useMemo(() => MOCK_EVENTS.reduce((s, e) => s + e.totalBudget, 0), []);
-  const spentBudget = useMemo(() => MOCK_EVENTS.reduce((s, e) => s + e.spentBudget, 0), []);
-  const pendingTodos = useMemo(() => MOCK_TODOS.filter((t) => !t.completed), []);
-  const sortedEvents = useMemo(() => [...MOCK_EVENTS].sort((a, b) => a.daysLeft - b.daysLeft), []);
-  const sortedTodos = useMemo(() => {
-    const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 } as const;
-    return [...MOCK_TODOS].sort((a, b) => {
-      if (a.completed !== b.completed) return a.completed ? 1 : -1;
-      return (priorityOrder[a.priority] ?? 2) - (priorityOrder[b.priority] ?? 2);
-    });
+  const [events, setEvents] = useState<EventRow[]>([]);
+  const [todos, setTodos] = useState<TodoRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [evtRes, todoRes] = await Promise.all([
+        supabase.from("events").select("id, name, type, format, status, tentative_dates, confirmed_date, expected_attendees, completion_percent, created_at").order("created_at", { ascending: false }),
+        supabase.from("event_checklist").select("id, label, done, event_id").eq("done", false).order("sort_order").limit(10),
+      ]);
+      if (cancelled) return;
+      if (evtRes.data) setEvents(evtRes.data as EventRow[]);
+      if (todoRes.data && evtRes.data) {
+        const nameMap = new Map(evtRes.data.map((e: any) => [e.id, e.name]));
+        setTodos(todoRes.data.map((t: any) => ({ ...t, event_name: nameMap.get(t.event_id) ?? "" })));
+      }
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
   }, []);
+
+  // Realtime: auto-refresh on events table changes
+  useEffect(() => {
+    const channel = supabase.channel("dashboard-events")
+      .on("postgres_changes", { event: "*", schema: "public", table: "events" }, () => {
+        // Re-fetch events
+        (async () => {
+          const { data } = await supabase.from("events").select("id, name, type, format, status, tentative_dates, confirmed_date, expected_attendees, completion_percent, created_at").order("created_at", { ascending: false });
+          if (data) setEvents(data as EventRow[]);
+        })();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  const activeEvents = useMemo(() => events.filter((e) => e.status !== "archived" && e.status !== "draft"), [events]);
+
+  const urgentCount = useMemo(() => {
+    return events.filter((e) => {
+      const dateStr = e.confirmed_date ?? e.tentative_dates?.[0];
+      if (!dateStr) return false;
+      return daysUntil(String(dateStr).slice(0, 10)) <= 7 && e.status !== "archived";
+    }).length;
+  }, [events]);
+
+  const sortedEvents = useMemo(() => {
+    return [...events]
+      .filter((e) => e.status !== "archived")
+      .sort((a, b) => {
+        const dateA = a.confirmed_date ?? a.tentative_dates?.[0] ?? "9999-12-31";
+        const dateB = b.confirmed_date ?? b.tentative_dates?.[0] ?? "9999-12-31";
+        return String(dateA).localeCompare(String(dateB));
+      });
+  }, [events]);
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">總覽</h1>
-        <p className="text-sm text-muted-foreground">
-          行銷活動概況
-        </p>
+        <p className="text-sm text-muted-foreground">行銷活動概況</p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          icon={Calendar}
-          title="進行中活動"
-          value={activeEvents.length}
-          sub={`${MOCK_EVENTS.length} 個活動總計`}
-        />
-        <StatCard
-          icon={AlertTriangle}
-          title="即將到期"
-          value={urgentCount}
-          sub="7 天內需完成"
-        />
-        <StatCard
-          icon={TrendingUp}
-          title="總預算"
-          value={formatNTD(totalBudget)}
-          sub={`已使用 ${formatNTD(spentBudget)}`}
-        />
-        <StatCard
-          icon={Clock}
-          title="待辦事項"
-          value={pendingTodos.length}
-          sub={`${MOCK_TODOS.length} 項總計`}
-        />
-      </div>
-
-      {/* Main Content: Events + Todos */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Events Grid */}
-        <div className="lg:col-span-2 space-y-4">
+      {loading ? (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[1,2,3,4].map((i) => (
+              <Card key={i} className="ring-1 ring-foreground/10">
+                <CardContent className="flex items-center gap-4 p-5">
+                  <Skeleton className="h-10 w-10 rounded-lg" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-6 w-16" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
           <Card className="ring-1 ring-foreground/10">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">活動專案</CardTitle>
-              <CardDescription>依到期日排序</CardDescription>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {sortedEvents.map((event) => (
-                <EventCard key={event.id} event={event} />
-              ))}
+            <CardContent className="p-5 space-y-3">
+              {[1,2,3].map((i) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}
             </CardContent>
           </Card>
         </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard icon={Calendar} title="進行中活動" value={activeEvents.length} sub={`${events.length} 個活動總計`} />
+            <StatCard icon={AlertTriangle} title="即將到期" value={urgentCount} sub="7 天內" />
+            <StatCard icon={TrendingUp} title="平均完成度" value={`${events.length > 0 ? Math.round(events.reduce((s, e) => s + e.completion_percent, 0) / events.length) : 0}%`} sub="所有活動" />
+            <StatCard icon={Clock} title="活動數量" value={events.length} sub="已建立" />
+          </div>
 
-        {/* Todos */}
-        <div className="space-y-4">
-          <Card className="ring-1 ring-foreground/10">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">近期待辦</CardTitle>
-              <CardDescription>
-                {pendingTodos.length} 項未完成
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {sortedTodos.map((item) => (
-                <TodoRow key={item.id} item={item} />
-              ))}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+          {events.length === 0 ? (
+            <Card className="ring-1 ring-foreground/10">
+              <CardContent className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-2">
+                <p>尚無活動</p>
+                <Link href="/events/new" className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">建立第一個活動</Link>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="ring-1 ring-foreground/10">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">活動專案</CardTitle>
+                <CardDescription>依日期排序</CardDescription>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {sortedEvents.map((evt) => {
+                  const dateStr = evt.confirmed_date ?? evt.tentative_dates?.[0];
+                  const days = dateStr ? daysUntil(String(dateStr).slice(0, 10)) : null;
+                  const statusColor = STATUS_COLORS[evt.status] ?? "";
+                  return (
+                    <Link key={evt.id} href={`/events/${evt.id}`}>
+                    <Card className="ring-1 ring-foreground/10 hover:shadow-md transition-all cursor-pointer">
+                      <CardContent className="p-5 space-y-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <h3 className="font-semibold text-base truncate">{evt.name || "未命名活動"}</h3>
+                            <p className="text-sm text-muted-foreground mt-0.5">
+                              {dateStr ? String(dateStr).slice(0, 10) : "日期未定"}
+                              {evt.expected_attendees ? ` · ${evt.expected_attendees} 人` : ""}
+                            </p>
+                          </div>
+                          <Badge variant="secondary" className={`shrink-0 text-xs ${statusColor}`}>
+                            {EVENT_STATUS_MAP[evt.status as keyof typeof EVENT_STATUS_MAP] ?? evt.status}
+                          </Badge>
+                        </div>
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">完成度</span>
+                            <span className="font-medium">{evt.completion_percent}%</span>
+                          </div>
+                          <Progress value={evt.completion_percent} className="h-2.5" />
+                        </div>
+                        {days !== null && (
+                          <span className={`text-sm font-medium ${daysLeftColor(days)}`}>
+                            {days <= 0 ? "已過期" : `剩 ${days} 天`}
+                          </span>
+                        )}
+                      </CardContent>
+                    </Card>
+                    </Link>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Todos from event checklists — collapsible */}
+          {todos.length > 0 && (
+            <TodosCard todos={todos} />
+          )}
+        </>
+      )}
     </div>
   );
 }

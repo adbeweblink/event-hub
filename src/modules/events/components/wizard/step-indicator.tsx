@@ -7,8 +7,9 @@ const STEP_LABELS = [
   "規模與場地",
   "時間",
   "受眾",
-  "議程 × 人員 × 預算",
-  "行銷宣傳",
+  "議程",
+  "贊助收入",
+  "行銷 × 服務",
   "確認建立",
 ];
 
@@ -34,7 +35,7 @@ export function StepIndicator({ current, total }: { current: number; total: numb
                 {isDone ? <Check className="h-3.5 w-3.5" /> : stepNum}
               </div>
               <span
-                className={`text-xs truncate hidden sm:block ${
+                className={`text-xs truncate hidden lg:block ${
                   isActive ? "font-medium" : "text-muted-foreground"
                 }`}
               >

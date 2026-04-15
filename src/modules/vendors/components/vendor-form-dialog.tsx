@@ -10,27 +10,28 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { VENDOR_CATEGORIES } from "../constants";
-import { StarRatingInput } from "@/shared/components/stars";
 import { nativeSelectCn } from "@/shared/lib/styles";
-import type { Vendor, VendorCategory } from "@/shared/types";
+import type { VendorRecord, VendorFormData } from "../hooks/use-vendors";
+import type { VendorCategory } from "@/shared/types";
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  onSubmit: (data: Omit<Vendor, "id" | "createdAt" | "updatedAt">) => void;
-  initial?: Vendor | null;
+  onSubmit: (data: VendorFormData) => void;
+  initial?: VendorRecord | null;
 }
 
-const EMPTY: Omit<Vendor, "id" | "createdAt" | "updatedAt"> = {
+const EMPTY: VendorFormData = {
   name: "",
   category: "other",
+  taxId: "",
+  bankCode: "",
+  bankName: "",
+  bankAccount: "",
   contactName: "",
   contactPhone: "",
   contactEmail: "",
-  notes: "",
-  rating: 3,
 };
 
 export function VendorFormDialog({ open, onClose, onSubmit, initial }: Props) {
@@ -42,11 +43,13 @@ export function VendorFormDialog({ open, onClose, onSubmit, initial }: Props) {
       setForm({
         name: initial.name,
         category: initial.category,
+        taxId: initial.taxId,
+        bankCode: initial.bankCode,
+        bankName: initial.bankName,
+        bankAccount: initial.bankAccount,
         contactName: initial.contactName,
         contactPhone: initial.contactPhone,
         contactEmail: initial.contactEmail,
-        notes: initial.notes,
-        rating: initial.rating,
       });
     } else {
       setForm(EMPTY);
@@ -97,6 +100,44 @@ export function VendorFormDialog({ open, onClose, onSubmit, initial }: Props) {
             </div>
           </div>
 
+          {/* Tax & Bank */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">統一編號</label>
+              <Input
+                value={form.taxId}
+                onChange={(e) => set("taxId", e.target.value)}
+                placeholder="12345678"
+                maxLength={8}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">銀行代碼</label>
+              <Input
+                value={form.bankCode}
+                onChange={(e) => set("bankCode", e.target.value)}
+                placeholder="例：808"
+                maxLength={3}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">銀行名稱</label>
+              <Input
+                value={form.bankName}
+                onChange={(e) => set("bankName", e.target.value)}
+                placeholder="例：玉山銀行"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">銀行帳號</label>
+              <Input
+                value={form.bankAccount}
+                onChange={(e) => set("bankAccount", e.target.value)}
+                placeholder="帳號"
+              />
+            </div>
+          </div>
+
           {/* Contact */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
@@ -124,23 +165,6 @@ export function VendorFormDialog({ open, onClose, onSubmit, initial }: Props) {
                 placeholder="email@example.com"
               />
             </div>
-          </div>
-
-          {/* Rating */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium">評分</label>
-            <StarRatingInput value={form.rating} onChange={(v) => set("rating", v)} />
-          </div>
-
-          {/* Notes */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium">備註</label>
-            <Textarea
-              value={form.notes}
-              onChange={(e) => set("notes", e.target.value)}
-              placeholder="過往配合經驗、注意事項..."
-              rows={3}
-            />
           </div>
 
           <DialogFooter>
