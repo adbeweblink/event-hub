@@ -16,5 +16,7 @@
     "architecture": false,
     "flow_check": false,
     "ui_check": false
-  }
+  },
+  "lastPrompt": "Repository\rYour project is linked to a Git repository for continuous deployment.\rCurrent repository\rgithub.com/adbeweblink/event-hub\rLearn more about continuous deployment in the docs",
+  "lastUpdate": "2026-04-15T20:17:53.879Z"
 }
