@@ -2,6 +2,14 @@
   command = "npm run build"
   publish = "out"
 
+# Root → login (server-side, no JS needed — ensures screenshot bot sees hero page)
+[[redirects]]
+  from = "/"
+  to = "/login"
+  status = 302
+  force = true
+
+# SPA fallback for client-side routing
 [[redirects]]
   from = "/*"
   to = "/index.html"
