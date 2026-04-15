@@ -51,8 +51,8 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen">
       {/* Left Panel — Hero */}
-      <div className="hidden lg:flex lg:w-[55%] relative overflow-hidden">
-        {/* Background image */}
+      <div className="hidden lg:flex lg:w-[55%] relative overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900">
+        {/* Background image with CSS gradient fallback for headless screenshot */}
         <img src="/login-hero.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
         {/* Dark overlay for readability */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/80 to-black/65" />
