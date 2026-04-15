@@ -72,7 +72,7 @@ export function EventWizard() {
     try {
       const eventId = await createEvent();
       if (eventId) {
-        router.push(`/events/${eventId}`);
+        router.push(`/events/view?id=${eventId}`);
       } else {
         setIsCreating(false);
       }

@@ -56,7 +56,7 @@ export function GlobalSearch() {
       ]);
       if (cancelled) return;
       const items: SearchResult[] = [
-        ...(evts.data ?? []).map((e: any) => ({ id: e.id, type: "event" as const, label: e.name, sub: e.status, href: `/events/${e.id}` })),
+        ...(evts.data ?? []).map((e: any) => ({ id: e.id, type: "event" as const, label: e.name, sub: e.status, href: `/events/view?id=${e.id}` })),
         ...(vendors.data ?? []).map((v: any) => ({ id: v.id, type: "vendor" as const, label: v.name, sub: v.category, href: "/vendors" })),
         ...(sponsors.data ?? []).map((s: any) => ({ id: s.id, type: "sponsor" as const, label: s.name, sub: s.tier, href: "/sponsors" })),
         ...(talents.data ?? []).map((t: any) => ({ id: t.id, type: "talent" as const, label: t.name, sub: t.title ?? "", href: "/talents" })),

@@ -155,7 +155,7 @@ export function EventList() {
                   <tr
                     key={evt.id}
                     className="border-b last:border-b-0 hover:bg-muted/30 transition-colors cursor-pointer"
-                    onClick={() => router.push(`/events/${evt.id}`)}
+                    onClick={() => router.push(`/events/view?id=${evt.id}`)}
                   >
                     <td className="px-4 py-3 font-medium">
                       {evt.name || `${evt.year} ${evt.quarter} 活動`}
@@ -199,7 +199,7 @@ export function EventList() {
                           <MoreHorizontal className="h-4 w-4" />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => router.push(`/events/${evt.id}`)}>
+                          <DropdownMenuItem onClick={() => router.push(`/events/view?id=${evt.id}`)}>
                             <Pencil className="mr-2 h-4 w-4" />編輯
                           </DropdownMenuItem>
                           <DropdownMenuItem className="text-destructive" onClick={() => deleteEvent(evt.id)}>
