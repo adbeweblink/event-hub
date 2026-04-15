@@ -51,7 +51,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen">
       {/* Left Panel — Hero */}
-      <div className="hidden lg:flex lg:w-[55%] relative overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900">
+      <div className="hidden md:flex md:w-[55%] relative overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900">
         {/* Background image with CSS gradient fallback for headless screenshot */}
         <img src="/login-hero.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
         {/* Dark overlay for readability */}
@@ -121,7 +121,7 @@ export default function LoginPage() {
       <div className="flex flex-1 items-center justify-center px-6 py-12 bg-background">
         <div className="w-full max-w-[380px] space-y-8">
           {/* Mobile logo (hidden on lg) */}
-          <div className="lg:hidden text-center space-y-3">
+          <div className="md:hidden text-center space-y-3">
             <div className="flex justify-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg">
                 <CalendarCheck className="h-7 w-7" />
@@ -134,7 +134,7 @@ export default function LoginPage() {
           </div>
 
           {/* Form header */}
-          <div className="hidden lg:block space-y-2">
+          <div className="hidden md:block space-y-2">
             <h2 className="text-2xl font-bold tracking-tight">
               {isSignUp ? "建立帳號" : "歡迎回來"}
             </h2>
