@@ -23,11 +23,8 @@ export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const { signIn, signUp } = useAuth();
   const router = useRouter();
-
-  useEffect(() => { setMounted(true); }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -96,7 +93,8 @@ export default function LoginPage() {
               {FEATURES.map((f) => (
                 <div
                   key={f.title}
-                  className={`flex items-start gap-3 rounded-xl border border-white/[0.06] bg-white/[0.03] backdrop-blur-sm p-4 transition-all duration-700 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+                  className="flex items-start gap-3 rounded-xl border border-white/[0.06] bg-white/[0.03] backdrop-blur-sm p-4 animate-[fadeInUp_0.7s_ease-out_both]"
+                  style={{ animationDelay: `${FEATURES.indexOf(f) * 100}ms` }}
                 >
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/[0.06]">
                     <f.icon className="h-4.5 w-4.5 text-white/70" />

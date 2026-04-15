@@ -20,8 +20,14 @@ const notoSansTC = Noto_Sans_TC({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://adbemarketing.netlify.app"),
   title: "Event Hub — 行銷活動管理平台",
   description: "行銷活動專案管理、廠商資料庫、進度追蹤",
+  openGraph: {
+    title: "Event Hub — 行銷活動管理平台",
+    description: "從活動企劃、場地安排、講者邀約到預算控管，用一個平台掌握所有環節。",
+    images: [{ url: "/login-hero.jpg", width: 1200, height: 630 }],
+  },
 };
 
 export default function RootLayout({
