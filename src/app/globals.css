@@ -122,9 +122,16 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Headless browser / prefers-reduced-motion: skip animations so screenshots see content */
-@media (prefers-reduced-motion: reduce) {
-  * { animation: none !important; transition: none !important; }
+/* Headless Chrome (Netlify screenshot bot): force content visible immediately */
+.headless * {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+}
+.headless .backdrop-blur-sm {
+  backdrop-filter: none !important;
+  background: rgba(0, 0, 0, 0.6) !important;
 }
 
 @layer base {
