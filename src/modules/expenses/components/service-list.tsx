@@ -8,13 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, RotateCcw, Download } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, RotateCcw, Download, Link2 } from "lucide-react";
 import { formatNTD } from "@/shared/lib/format";
 import { downloadCSV } from "@/shared/lib/csv";
 import { useServices, type ServiceRecord, type ServiceFormData } from "../hooks/use-expenses";
 import { ServiceFormDialog } from "./service-form-dialog";
 import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_MAP } from "../constants";
 import { nativeSelectCn } from "@/shared/lib/styles";
+import { generateFormLink } from "@/shared/lib/form-link";
 
 export function ServiceList() {
   const {
@@ -153,6 +154,9 @@ export function ServiceList() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(svc); }}>
                           <Pencil className="mr-2 h-4 w-4" />編輯
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); generateFormLink("service", svc.id); }}>
+                          <Link2 className="mr-2 h-4 w-4" />產生表單連結
                         </DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); deleteService(svc.id); }}>
                           <Trash2 className="mr-2 h-4 w-4" />刪除

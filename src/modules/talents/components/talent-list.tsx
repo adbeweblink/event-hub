@@ -20,11 +20,13 @@ import {
   Trash2,
   RotateCcw,
   Download,
+  Link2,
 } from "lucide-react";
 import { useTalents, type TalentRecord, type TalentFormData } from "../hooks/use-talents";
 import { TalentFormDialog } from "./talent-form-dialog";
 import { SPEAKER_SUB_TYPES, SPEAKER_SUB_TYPE_MAP, FEE_UNIT_OPTIONS } from "../constants";
 import { Stars } from "@/shared/components/stars";
+import { generateFormLink } from "@/shared/lib/form-link";
 import { formatNTD } from "@/shared/lib/format";
 import { nativeSelectCn } from "@/shared/lib/styles";
 import { downloadCSV } from "@/shared/lib/csv";
@@ -83,6 +85,10 @@ function TalentCard({
               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(); }}>
                 <Pencil className="mr-2 h-4 w-4" />
                 編輯
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); generateFormLink("speaker", talent.id); }}>
+                <Link2 className="mr-2 h-4 w-4" />
+                產生表單連結
               </DropdownMenuItem>
               <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
                 <Trash2 className="mr-2 h-4 w-4" />

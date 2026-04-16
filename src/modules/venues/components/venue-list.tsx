@@ -26,6 +26,7 @@ import {
   ExternalLink,
   RotateCcw,
   Wifi,
+  Link2,
   Monitor,
   Mic,
   Car,
@@ -42,6 +43,7 @@ import { Lightbox } from "@/shared/components/lightbox";
 import { MapLightbox } from "@/shared/components/map-lightbox";
 import { formatNTD } from "@/shared/lib/format";
 import { nativeSelectCn } from "@/shared/lib/styles";
+import { generateFormLink } from "@/shared/lib/form-link";
 
 const EQUIPMENT_ICONS: Record<string, { icon: React.ElementType; label: string }> = {
   projector: { icon: Monitor, label: "投影機" },
@@ -123,6 +125,10 @@ function VenueCard({
               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(); }}>
                 <Pencil className="mr-2 h-4 w-4" />
                 編輯
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); generateFormLink("venue", venue.id); }}>
+                <Link2 className="mr-2 h-4 w-4" />
+                產生表單連結
               </DropdownMenuItem>
               <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
                 <Trash2 className="mr-2 h-4 w-4" />

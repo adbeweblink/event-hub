@@ -21,6 +21,7 @@ import {
   Lock,
   RotateCcw,
   Download,
+  Link2,
 } from "lucide-react";
 import { useSponsors, type SponsorRecord, type SponsorFormData } from "../hooks/use-sponsors";
 import { SponsorFormDialog } from "./sponsor-form-dialog";
@@ -33,6 +34,7 @@ import {
 } from "../constants";
 import { useAuth } from "@/modules/core/hooks/use-auth";
 import { formatNTD } from "@/shared/lib/format";
+import { generateFormLink } from "@/shared/lib/form-link";
 import { nativeSelectCn } from "@/shared/lib/styles";
 import { downloadCSV } from "@/shared/lib/csv";
 
@@ -285,6 +287,10 @@ export function SponsorList() {
                           <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(sponsor); }}>
                             <Pencil className="mr-2 h-4 w-4" />
                             編輯
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); generateFormLink("sponsor", sponsor.id); }}>
+                            <Link2 className="mr-2 h-4 w-4" />
+                            產生表單連結
                           </DropdownMenuItem>
                           <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); deleteSponsor(sponsor.id); }}>
                             <Trash2 className="mr-2 h-4 w-4" />
